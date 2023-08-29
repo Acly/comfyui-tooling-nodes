@@ -65,8 +65,11 @@ class SendImageWebSocket:
             array = 255.0 * tensor.cpu().numpy()
             image = Image.fromarray(np.clip(array, 0, 255).astype(np.uint8))
 
-            PromptServer.instance.send_sync(
-                BinaryEventTypes.UNENCODED_PREVIEW_IMAGE, ["PNG", image, None]
+            server = PromptServer.instance
+            server.send_sync(
+                BinaryEventTypes.UNENCODED_PREVIEW_IMAGE,
+                ["PNG", image, None],
+                server.client_id,
             )
             results.append(
                 # Could put some kind of ID here, but for now just match them by index
