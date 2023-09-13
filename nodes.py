@@ -45,7 +45,9 @@ class LoadMaskBase64:
         imgdata = base64.b64decode(mask)
         img = Image.open(BytesIO(imgdata))
         img = np.array(img).astype(np.float32) / 255.0
-        img = torch.from_numpy(img)[:, :, 0]
+        img = torch.from_numpy(img)
+        if img.dim() == 3:  # RGB(A) input, use red channel
+            img = img[:, :, 0]
         return (img,)
 
 
