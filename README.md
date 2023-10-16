@@ -1,6 +1,6 @@
 # ComfyUI Nodes for External Tooling
 
-Provides nodes geared towards using ComfyUI as a backend for external tools.
+Provides nodes and API geared towards using ComfyUI as a backend for external tools.
 
 ## Nodes for sending and receiving images
 
@@ -51,6 +51,29 @@ Crops an image. (ComfyUI has a CropMask node, this is the same for images.)
 Copies a mask into the alpha channel of an image.
 * Inputs: image and mask
 * Outputs: RGBA image with mask used as transparency
+
+## API for model inspection
+
+There are various types of models that can be loaded as checkpoint, LoRA, ControlNet, etc. which cannot be used interchangeably. The following API helps to categorize and filter them.
+
+### /etn/model_info
+
+Lists available models with additional classification info.
+* Paramters: _none_
+* Output: list of model files
+    ```
+    {
+        "checkpoint_file.safetensors": {
+            "base_model": "sd15"|"sd20"|"sdxl",
+            "is_inpaint": true|false,
+            "is_refiner": true|false
+        },
+        ...
+    }
+    ```
+    The entry is `{"base_model": "unknown"}` for models which are not in safetensors format.
+
+_Note: currently only supports checkpoints. May add other models in the future._
 
 ## Installation
 

@@ -1,4 +1,4 @@
-from . import nodes
+from . import api, nodes
 
 NODE_CLASS_MAPPINGS = {
     "ETN_LoadImageBase64": nodes.LoadImageBase64,
