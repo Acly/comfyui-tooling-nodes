@@ -9,7 +9,7 @@ from server import PromptServer, BinaryEventTypes
 class LoadImageBase64:
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": {"image": ("STRING", {"multiline": True})}}
+        return {"required": {"image": ("STRING", {"multiline": False})}}
 
     RETURN_TYPES = ("IMAGE", "MASK")
     CATEGORY = "_external_tooling"
@@ -35,7 +35,7 @@ class LoadImageBase64:
 class LoadMaskBase64:
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": {"mask": ("STRING", {"multiline": True})}}
+        return {"required": {"mask": ("STRING", {"multiline": False})}}
 
     RETURN_TYPES = ("MASK",)
     CATEGORY = "_external_tooling"
