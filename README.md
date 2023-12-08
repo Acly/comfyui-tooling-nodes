@@ -64,14 +64,14 @@ Lists available models with additional classification info.
     ```
     {
         "checkpoint_file.safetensors": {
-            "base_model": "sd15"|"sd20"|"sdxl",
+            "base_model": "sd15"|"sd20"|"sd21"|"sdxl"|"ssd1b"|"svd",
             "is_inpaint": true|false,
             "is_refiner": true|false
         },
         ...
     }
     ```
-    The entry is `{"base_model": "unknown"}` for models which are not in safetensors format.
+    The entry is `{"base_model": "unknown"}` for models which are not in safetensors format or do not match any of the known base models.
 
 _Note: currently only supports checkpoints. May add other models in the future._
 
