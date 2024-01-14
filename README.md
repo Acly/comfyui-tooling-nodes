@@ -40,12 +40,6 @@ That is two 32-bit integers (big endian) with values 1 and 2 followed by the PNG
 
 When integrating ComfyUI into tools which use layers and compose them on the fly, it is useful to only receive relevant masked regions.
 
-### Crop Image
-
-Crops an image. (ComfyUI has a CropMask node, this is the same for images.)
-* Inputs: image, x and y offset, width and height
-* Outputs: image in the region (x, y) -> (x + width, y + height)
-
 ### Apply Mask to Image
 
 Copies a mask into the alpha channel of an image.

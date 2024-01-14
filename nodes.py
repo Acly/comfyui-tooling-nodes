@@ -82,6 +82,8 @@ class SendImageWebSocket:
 
 
 class CropImage:
+    """Deprecated, ComfyUI has an ImageCrop node now which does the same."""
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
