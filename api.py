@@ -73,7 +73,7 @@ def inspect_checkpoint(filename):
         base_model_name = model_names.get(base_model.__name__, "unknown")
         return {
             "base_model": base_model_name,
-            "is_inpaint": base_model_name == "sd15" and input_count > 4,
+            "is_inpaint": base_model_name in ["sd15", "sdxl"] and input_count > 4,
             "is_refiner": base_model is comfy.supported_models.SDXLRefiner,
         }
     return {"base_model": "unknown"}
