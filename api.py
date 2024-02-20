@@ -3,8 +3,8 @@ from typing import NamedTuple
 import json
 
 import comfy.utils
-import comfy.supported_models
-import comfy.model_detection
+from comfy import supported_models
+from comfy import model_detection
 import folder_paths
 import server
 
@@ -33,10 +33,6 @@ class FakeTensor(NamedTuple):
             return d
 
 
-def config_matches(a, b):
-    return all(a[k] == b[k] for k in a if k in b)
-
-
 def inspect_checkpoint(filename):
     # Read header of safetensors file
     path = folder_paths.get_full_path("checkpoints", filename)
@@ -50,9 +46,11 @@ def inspect_checkpoint(filename):
                 cfg[key] = FakeTensor.from_dict(cfg[key])
 
         # Reuse Comfy's model detection
-        unet_config = comfy.model_detection.detect_unet_config(
-            cfg, "model.diffusion_model.", "F32"
-        )
+        unet_args = [cfg, "model.diffusion_model.", "F32"]
+        try:  # latest ComfyUI takes 2 args
+            unet_config = model_detection.detect_unet_config(*unet_args[:-1])
+        except TypeError as e:  # older ComfyUI versions take 3 args
+            unet_config = model_detection.detect_unet_config(*unet_args)
 
         # Get input count to detect inpaint models
         if input_block := cfg.get(input_block_name, None):
@@ -61,20 +59,16 @@ def inspect_checkpoint(filename):
             input_count = 4
 
         # Find a matching base model depending on unet config
-        matching_models = (
-            model
-            for model in comfy.supported_models.models
-            if config_matches(model.unet_config, unet_config)
-        )
-        base_model = next(matching_models, None)
+        base_model = model_detection.model_config_from_unet_config(unet_config)
         if base_model is None:
             return {"base_model": "unknown"}
 
-        base_model_name = model_names.get(base_model.__name__, "unknown")
+        base_model_class = base_model.__class__
+        base_model_name = model_names.get(base_model_class.__name__, "unknown")
         return {
             "base_model": base_model_name,
             "is_inpaint": base_model_name in ["sd15", "sdxl"] and input_count > 4,
-            "is_refiner": base_model is comfy.supported_models.SDXLRefiner,
+            "is_refiner": base_model_class is supported_models.SDXLRefiner,
         }
     return {"base_model": "unknown"}
 
