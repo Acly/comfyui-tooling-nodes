@@ -19,6 +19,8 @@ model_names = {
     "SDXL": "sdxl",
     "SSD1B": "ssd1b",
     "SVD_img2vid": "svd",
+    "Stable_Cascade_B": "cascade-b",
+    "Stable_Cascade_C": "cascade-c",
 }
 
 
