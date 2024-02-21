@@ -75,13 +75,15 @@ def inspect_checkpoint(filename):
     return {"base_model": "unknown"}
 
 
-@server.PromptServer.instance.routes.get("/etn/model_info")
-async def model_info(request):
-    try:
-        info = {
-            filename: inspect_checkpoint(filename)
-            for filename in folder_paths.get_filename_list("checkpoints")
-        }
-        return web.json_response(info)
-    except Exception as e:
-        return web.json_response(dict(error=str(e)), status=500)
+if _server := getattr(server.PromptServer, "instance", None):
+
+    @_server.routes.get("/etn/model_info")
+    async def model_info(request):
+        try:
+            info = {
+                filename: inspect_checkpoint(filename)
+                for filename in folder_paths.get_filename_list("checkpoints")
+            }
+            return web.json_response(info)
+        except Exception as e:
+            return web.json_response(dict(error=str(e)), status=500)
