@@ -127,9 +127,9 @@ class ApplyMaskToImage:
             }
         }
 
+    CATEGORY = "_external_tooling"
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "apply_mask"
-    CATEGORY = "layered_diffusion"
 
     def apply_mask(self, image: torch.Tensor, mask: torch.Tensor):
         # Move the channel to the second dimension for processing
