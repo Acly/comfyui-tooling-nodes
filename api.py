@@ -36,43 +36,46 @@ class FakeTensor(NamedTuple):
 
 
 def inspect_checkpoint(filename):
-    # Read header of safetensors file
-    path = folder_paths.get_full_path("checkpoints", filename)
-    header = comfy.utils.safetensors_header(path)
-    if header:
-        cfg = json.loads(header.decode("utf-8"))
+    try:
+        # Read header of safetensors file
+        path = folder_paths.get_full_path("checkpoints", filename)
+        header = comfy.utils.safetensors_header(path)
+        if header:
+            cfg = json.loads(header.decode("utf-8"))
 
-        # Build a fake "state_dict" from the header info to avoid reading the full weights
-        for key in cfg:
-            if not key == "__metadata__":
-                cfg[key] = FakeTensor.from_dict(cfg[key])
+            # Build a fake "state_dict" from the header info to avoid reading the full weights
+            for key in cfg:
+                if not key == "__metadata__":
+                    cfg[key] = FakeTensor.from_dict(cfg[key])
 
-        # Reuse Comfy's model detection
-        unet_args = [cfg, "model.diffusion_model.", "F32"]
-        try:  # latest ComfyUI takes 2 args
-            unet_config = model_detection.detect_unet_config(*unet_args[:-1])
-        except TypeError as e:  # older ComfyUI versions take 3 args
-            unet_config = model_detection.detect_unet_config(*unet_args)
+            # Reuse Comfy's model detection
+            unet_args = [cfg, "model.diffusion_model.", "F32"]
+            try:  # latest ComfyUI takes 2 args
+                unet_config = model_detection.detect_unet_config(*unet_args[:-1])
+            except TypeError as e:  # older ComfyUI versions take 3 args
+                unet_config = model_detection.detect_unet_config(*unet_args)
 
-        # Get input count to detect inpaint models
-        if input_block := cfg.get(input_block_name, None):
-            input_count = input_block.shape[1]
-        else:
-            input_count = 4
+            # Get input count to detect inpaint models
+            if input_block := cfg.get(input_block_name, None):
+                input_count = input_block.shape[1]
+            else:
+                input_count = 4
 
-        # Find a matching base model depending on unet config
-        base_model = model_detection.model_config_from_unet_config(unet_config)
-        if base_model is None:
-            return {"base_model": "unknown"}
+            # Find a matching base model depending on unet config
+            base_model = model_detection.model_config_from_unet_config(unet_config)
+            if base_model is None:
+                return {"base_model": "unknown"}
 
-        base_model_class = base_model.__class__
-        base_model_name = model_names.get(base_model_class.__name__, "unknown")
-        return {
-            "base_model": base_model_name,
-            "is_inpaint": base_model_name in ["sd15", "sdxl"] and input_count > 4,
-            "is_refiner": base_model_class is supported_models.SDXLRefiner,
-        }
-    return {"base_model": "unknown"}
+            base_model_class = base_model.__class__
+            base_model_name = model_names.get(base_model_class.__name__, "unknown")
+            return {
+                "base_model": base_model_name,
+                "is_inpaint": base_model_name in ["sd15", "sdxl"] and input_count > 4,
+                "is_refiner": base_model_class is supported_models.SDXLRefiner,
+            }
+        return {"base_model": "unknown"}
+    except Exception as e:
+        return {"base_model": "unknown", "error": f"Failed to detect base model: {e}"}
 
 
 if _server := getattr(server.PromptServer, "instance", None):
