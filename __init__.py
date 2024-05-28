@@ -1,4 +1,4 @@
-from . import api, nodes
+from . import api, nodes, tile
 
 NODE_CLASS_MAPPINGS = {
     "ETN_LoadImageBase64": nodes.LoadImageBase64,
@@ -6,6 +6,10 @@ NODE_CLASS_MAPPINGS = {
     "ETN_SendImageWebSocket": nodes.SendImageWebSocket,
     "ETN_CropImage": nodes.CropImage,
     "ETN_ApplyMaskToImage": nodes.ApplyMaskToImage,
+    "ETN_ListAppend": nodes.ListAppend,
+    "ETN_ListElement": nodes.ListElement,
+    "ETN_SplitImageTiles": tile.SplitImageTiles,
+    "ETN_MergeImageTiles": tile.MergeImageTiles,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "ETN_LoadImageBase64": "Load Image (Base64)",
@@ -13,4 +17,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ETN_SendImageWebSocket": "Send Image (WebSocket)",
     "ETN_CropImage": "Crop Image",
     "ETN_ApplyMaskToImage": "Apply Mask to Image",
+    "ETN_ListAppend": "List 🢒 Append",
+    "ETN_ListElement": "List 🢒 Get Element",
+    "ETN_SplitImageTiles": "Tiles 🢒 Split Image",
+    "ETN_MergeImageTiles": "Tiles 🢒 Merge Image",
 }
