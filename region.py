@@ -13,14 +13,17 @@ from .nodes import ListWrapper
 def downsample_mask(mask: Tensor, batch: int, target_size: int, original_shape: Size) -> Tensor:
     h, w = original_shape[2], original_shape[3]
     hm, wm = mask.shape[2], mask.shape[3]
-    if (h, w) != (hm, wm):
-        raise ValueError(
-            f"Mask size must be image size divided by 8. Expected {w}x{h}, got {wm}x{hm}."
-        )
+    if (h, w) == (hm, wm):  # Mask is already in latent resolution
+        base_factor = 1
+    elif (h * 8, w * 8) == (hm, wm):  # Mask is in image resolution, downsample by 8
+        base_factor = 8
+    else:
+        raise ValueError(f"Bad mask size. Expected {w}x{h}, got {wm}x{hm}.")
+
     result = mask
-    for factor in [2, 4, 8]:
+    for factor in [1, 2, 4, 8]:
         size = (math.ceil(h / factor), math.ceil(w / factor))
-        if size[0] * size[1] == target_size:
+        if size[0] * size[1] == target_size and base_factor * factor > 1:
             result = F.interpolate(mask, size=size, mode="nearest")
             break
 
