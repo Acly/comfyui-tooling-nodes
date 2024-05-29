@@ -1,4 +1,4 @@
-from . import api, nodes, tile
+from . import api, nodes, tile, region
 
 NODE_CLASS_MAPPINGS = {
     "ETN_LoadImageBase64": nodes.LoadImageBase64,
@@ -10,6 +10,7 @@ NODE_CLASS_MAPPINGS = {
     "ETN_ListElement": nodes.ListElement,
     "ETN_SplitImageTiles": tile.SplitImageTiles,
     "ETN_MergeImageTiles": tile.MergeImageTiles,
+    "ETN_AttentionCouple": region.AttentionCouple,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "ETN_LoadImageBase64": "Load Image (Base64)",
@@ -21,4 +22,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ETN_ListElement": "List 🢒 Get Element",
     "ETN_SplitImageTiles": "Tiles 🢒 Split Image",
     "ETN_MergeImageTiles": "Tiles 🢒 Merge Image",
+    "ETN_AttentionCouple": "Region 🢒 Attention Couple",
 }
