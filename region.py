@@ -1,4 +1,4 @@
-# adapted from https://github.com/laksjdjf/cgem156-ComfyUI/blob/main/scripts/attention_couple/node.py
+# Adapted from https://github.com/laksjdjf/cgem156-ComfyUI/blob/main/scripts/attention_couple/node.py
 # by @laksjdjf
 
 import torch
@@ -10,23 +10,24 @@ from comfy.model_patcher import ModelPatcher
 from .nodes import ListWrapper
 
 
-def get_mask(mask: Tensor, batch_size: int, num_tokens: int, original_shape: Size) -> Tensor:
+def downsample_mask(mask: Tensor, batch: int, target_size: int, original_shape: Size) -> Tensor:
+    h, w = original_shape[2], original_shape[3]
+    hm, wm = mask.shape[2], mask.shape[3]
+    if (h, w) != (hm, wm):
+        raise ValueError(
+            f"Mask size must be image size divided by 8. Expected {w}x{h}, got {wm}x{hm}."
+        )
+    result = mask
+    for factor in [2, 4, 8]:
+        size = (math.ceil(h / factor), math.ceil(w / factor))
+        if size[0] * size[1] == target_size:
+            result = F.interpolate(mask, size=size, mode="nearest")
+            break
+
     num_conds = mask.shape[0]
-
-    if original_shape[2] * original_shape[3] == num_tokens:
-        down_sample_rate = 1
-    elif (original_shape[2] // 2) * (original_shape[3] // 2) == num_tokens:
-        down_sample_rate = 2
-    elif (original_shape[2] // 4) * (original_shape[3] // 4) == num_tokens:
-        down_sample_rate = 4
-    else:
-        down_sample_rate = 8
-
-    size = (original_shape[2] // down_sample_rate, original_shape[3] // down_sample_rate)
-    mask_downsample: Tensor = F.interpolate(mask, size=size, mode="nearest")
-    mask_downsample = mask_downsample.view(num_conds, num_tokens, 1)
-    mask_downsample = mask_downsample.repeat_interleave(batch_size, dim=0)
-    return mask_downsample
+    result = result.view(num_conds, target_size, 1)
+    result = result.repeat_interleave(batch, dim=0)
+    return result
 
 
 def lcm(a: int, b: int):
@@ -87,13 +88,11 @@ class AttentionCouple:
             q_chunks = q.chunk(num_chunks, dim=0)
             k_chunks = k.chunk(num_chunks, dim=0)
             lcm_tokens = lcm_for_list(num_tokens + [k.shape[1]])
-            conds_tensor = torch.cat(
-                [
-                    cond.repeat(self.batch_size, lcm_tokens // num_tokens[i], 1)
-                    for i, cond in enumerate(self.conds)
-                ],
-                dim=0,
-            )
+            conds_tensor = [
+                cond.repeat(self.batch_size, lcm_tokens // num_tokens[i], 1)
+                for i, cond in enumerate(self.conds)
+            ]
+            conds_tensor = torch.cat(conds_tensor, dim=0)
 
             qs, ks = [], []
             for i, cond_or_uncond in enumerate(cond_or_unconds):
@@ -107,12 +106,11 @@ class AttentionCouple:
 
             qs = torch.cat(qs, dim=0)
             ks = torch.cat(ks, dim=0)
-
             return qs, ks, ks
 
         def attn2_output_patch(out: Tensor, extra_options: dict):
             cond_or_unconds = extra_options["cond_or_uncond"]
-            mask_downsample = get_mask(
+            mask_downsample = downsample_mask(
                 self.mask, self.batch_size, out.shape[1], extra_options["original_shape"]
             )
             outputs: list[Tensor] = []
@@ -122,11 +120,10 @@ class AttentionCouple:
                     outputs.append(out[pos : pos + self.batch_size])
                     pos += self.batch_size
                 else:
-                    masked_output = (
-                        out[pos : pos + num_conds * self.batch_size] * mask_downsample
-                    ).view(num_conds, self.batch_size, out.shape[1], out.shape[2])
-                    masked_output = masked_output.sum(dim=0)
-                    outputs.append(masked_output)
+                    masked = out[pos : pos + num_conds * self.batch_size] * mask_downsample
+                    masked = masked.view(num_conds, self.batch_size, out.shape[1], out.shape[2])
+                    masked = masked.sum(dim=0)
+                    outputs.append(masked)
                     pos += num_conds * self.batch_size
             return torch.cat(outputs, dim=0)
 
