@@ -72,7 +72,7 @@ class AttentionCouple:
         assert mask_sum.sum() > 0, "There are areas that are zero in all masks."
         self.mask = mask / mask_sum
 
-        self.conds = [r["conditioning"][0][0] for r in regions.content[1:]]
+        self.conds = [r["conditioning"][0][0] for r in regions.content]
         num_tokens = [cond.shape[1] for cond in self.conds]
 
         def attn2_patch(q: Tensor, k: Tensor, v: Tensor, extra_options: dict):
@@ -104,7 +104,7 @@ class AttentionCouple:
                     ks.append(k_target)
                 else:
                     qs.append(q_chunks[i].repeat(num_conds, 1, 1))
-                    ks.append(torch.cat([k_target, conds_tensor], dim=0))
+                    ks.append(conds_tensor)
 
             qs = torch.cat(qs, dim=0)
             ks = torch.cat(ks, dim=0)
