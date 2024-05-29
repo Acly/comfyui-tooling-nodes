@@ -61,7 +61,7 @@ class SplitImageTiles:
             }
         }
 
-    CATEGORY = "_external_tooling"
+    CATEGORY = "external_tooling"
     RETURN_TYPES = ("LIST", "TILE_LAYOUT")
     FUNCTION = "tile"
 
@@ -97,7 +97,7 @@ class MergeImageTiles:
     def INPUT_TYPES(cls):
         return {"required": {"tiles": ("LIST",), "layout": ("TILE_LAYOUT",)}}
 
-    CATEGORY = "_external_tooling"
+    CATEGORY = "external_tooling"
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "merge"
 

@@ -54,7 +54,7 @@ class AttentionCouple:
 
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "attention_couple"
-    CATEGORY = "_external_tooling"
+    CATEGORY = "external_tooling"
 
     mask: Tensor
     conds: list[Tensor]

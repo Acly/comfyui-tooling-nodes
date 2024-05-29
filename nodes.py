@@ -13,7 +13,7 @@ class LoadImageBase64:
         return {"required": {"image": ("STRING", {"multiline": False})}}
 
     RETURN_TYPES = ("IMAGE", "MASK")
-    CATEGORY = "_external_tooling"
+    CATEGORY = "external_tooling"
     FUNCTION = "load_image"
 
     def load_image(self, image):
@@ -39,7 +39,7 @@ class LoadMaskBase64:
         return {"required": {"mask": ("STRING", {"multiline": False})}}
 
     RETURN_TYPES = ("MASK",)
-    CATEGORY = "_external_tooling"
+    CATEGORY = "external_tooling"
     FUNCTION = "load_mask"
 
     def load_mask(self, mask):
@@ -60,7 +60,7 @@ class SendImageWebSocket:
     RETURN_TYPES = ()
     FUNCTION = "send_images"
     OUTPUT_NODE = True
-    CATEGORY = "_external_tooling"
+    CATEGORY = "external_tooling"
 
     def send_images(self, images):
         results = []
@@ -109,7 +109,7 @@ class CropImage:
             }
         }
 
-    CATEGORY = "_external_tooling"
+    CATEGORY = "external_tooling"
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "crop"
 
@@ -128,7 +128,7 @@ class ApplyMaskToImage:
             }
         }
 
-    CATEGORY = "_external_tooling"
+    CATEGORY = "external_tooling"
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "apply_mask"
 
@@ -181,7 +181,7 @@ class ListAppend:
             },
         }
 
-    CATEGORY = "_external_tooling"
+    CATEGORY = "external_tooling"
     RETURN_TYPES = ("LIST",)
     FUNCTION = "append"
 
@@ -202,7 +202,7 @@ class ListElement:
             }
         }
 
-    CATEGORY = "_external_tooling"
+    CATEGORY = "external_tooling"
     RETURN_TYPES = ("IMAGE", "MASK", "CONDITIONING")
     FUNCTION = "element"
 
