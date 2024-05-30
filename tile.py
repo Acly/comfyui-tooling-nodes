@@ -9,17 +9,22 @@ IntArray = npt.NDArray[np.int_]
 
 class TileLayout:
     image_size: IntArray
-    tile_size: int
+    tile_size: IntArray
     overlap: int
     tile_count: IntArray
 
-    def __init__(self, image_size: IntArray, tile_size: int, overlap: int):
+    def __init__(self, image_size: IntArray, min_tile_size: int, overlap: int):
         assert all([x % 8 == 0 for x in image_size]), "Image size must be divisible by 8"
-        assert tile_size % 8 == 0, "Tile size must be divisible by 8"
-        self.tile_size = tile_size
-        self.overlap = overlap
+        assert min_tile_size % 8 == 0, "Tile size must be divisible by 8"
+        assert min_tile_size > 2 * overlap, "Tile size must be larger than total overlap"
+
         self.image_size = image_size
-        self.tile_count = (image_size - overlap) // (tile_size - overlap) + 1
+        self.overlap = overlap
+        self.tile_count = image_size // (min_tile_size - overlap)
+
+        image_size_with_overlap = self.image_size + (self.tile_count - 1) * overlap
+        tile_size = np.ceil(image_size_with_overlap / self.tile_count)
+        self.tile_size = (np.ceil(tile_size / 8) * 8).astype(int)
 
     def size(self, coord: IntArray):
         return self.end(coord) - self.start(coord)
@@ -56,8 +61,8 @@ class SplitImageTiles:
         return {
             "required": {
                 "image": ("IMAGE",),
-                "tile_size": ("INT", {"default": 512, "min": 64, "max": 8192, "step": 8}),
-                "overlap": ("INT", {"default": 0, "min": 0, "max": 8192, "step": 8}),
+                "min_tile_size": ("INT", {"default": 512, "min": 64, "max": 8192, "step": 8}),
+                "overlap": ("INT", {"default": 32, "min": 0, "max": 8192, "step": 8}),
             }
         }
 
@@ -65,8 +70,8 @@ class SplitImageTiles:
     RETURN_TYPES = ("LIST", "TILE_LAYOUT")
     FUNCTION = "tile"
 
-    def tile(self, image: Tensor, tile_size: int, overlap: int):
-        layout = TileLayout(np.array(image.shape[-3:-1]), tile_size, overlap)
+    def tile(self, image: Tensor, min_tile_size: int, overlap: int):
+        layout = TileLayout(np.array(image.shape[-3:-1]), min_tile_size, overlap)
         tiles = (image[:, start[0] : end[0], start[1] : end[1], :] for start, end in layout.tiles)
         return (ListWrapper([{"image": t} for t in tiles]), layout)
 
