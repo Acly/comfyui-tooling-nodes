@@ -1,5 +1,5 @@
+from __future__ import annotations
 from PIL import Image
-from typing import Any
 import numpy as np
 import base64
 import torch

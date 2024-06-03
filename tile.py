@@ -1,7 +1,7 @@
+from __future__ import annotations
 import numpy as np
 import numpy.typing as npt
 import torch
-from kornia.filters import box_blur
 from torch import Tensor
 
 IntArray = npt.NDArray[np.int_]
@@ -76,6 +76,8 @@ class TileLayout:
         return image[self.rect(self.coord(index))]
 
     def mask(self, coord: IntArray, blend: bool):
+        from kornia.filters import box_blur
+
         size = self.size(coord)
         padding = self.padding if blend else self.padding - self.blending
         s = self.start(coord, padding) - self.start(coord)

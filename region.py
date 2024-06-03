@@ -1,14 +1,13 @@
 # Adapted from https://github.com/laksjdjf/cgem156-ComfyUI/blob/main/scripts/attention_couple/node.py
 # by @laksjdjf
 
+from __future__ import annotations
 from typing import NamedTuple
 import torch
 import torch.nn.functional as F
 import math
 from torch import Tensor, Size
 from comfy.model_patcher import ModelPatcher
-
-from .nodes import ListWrapper
 
 
 def downsample_mask(mask: Tensor, batch: int, target_size: int, original_shape: Size) -> Tensor:
@@ -48,7 +47,7 @@ def lcm_for_list(numbers: list[int]):
 class Region(NamedTuple):
     previous: "Region" | None
     mask: Tensor
-    conditioning: dict
+    conditioning: list
 
     def to_list(self):
         result: list[Region] = []
@@ -76,7 +75,7 @@ class DefineRegion:
     RETURN_TYPES = ("REGIONS",)
     FUNCTION = "define"
 
-    def define(self, mask: Tensor, conditioning: dict, regions: Region | None = None):
+    def define(self, mask: Tensor, conditioning: list, regions: Region | None = None):
         return (Region(regions, mask, conditioning),)
 
 
@@ -104,12 +103,12 @@ class AttentionMask:
         region_list = regions.to_list()
         num_conds = len(region_list)
 
-        mask = torch.stack([r["mask"] for r in region_list], dim=0)
+        mask = torch.stack([r.mask for r in region_list], dim=0)
         mask_sum = mask.sum(dim=0, keepdim=True)
         assert mask_sum.sum() > 0, "There are areas that are zero in all masks."
         self.mask = mask / mask_sum
 
-        self.conds = [r["conditioning"][0][0] for r in region_list]
+        self.conds = [r.conditioning[0][0] for r in region_list]
         num_tokens = [cond.shape[1] for cond in self.conds]
 
         def attn2_patch(q: Tensor, k: Tensor, v: Tensor, extra_options: dict):

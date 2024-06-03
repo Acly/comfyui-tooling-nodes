@@ -11,7 +11,7 @@ NODE_CLASS_MAPPINGS = {
     "ETN_GenerateTileMask": tile.GenerateTileMask,
     "ETN_MergeImageTile": tile.MergeImageTile,
     "ETN_DefineRegion": region.DefineRegion,
-    "ETN_AttentionCouple": region.AttentionMask,
+    "ETN_AttentionMask": region.AttentionMask,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "ETN_LoadImageBase64": "Load Image (Base64)",
