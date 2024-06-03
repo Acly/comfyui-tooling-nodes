@@ -1,6 +1,7 @@
 # Adapted from https://github.com/laksjdjf/cgem156-ComfyUI/blob/main/scripts/attention_couple/node.py
 # by @laksjdjf
 
+from typing import NamedTuple
 import torch
 import torch.nn.functional as F
 import math
@@ -44,35 +45,71 @@ def lcm_for_list(numbers: list[int]):
     return current_lcm
 
 
-class AttentionCouple:
+class Region(NamedTuple):
+    previous: "Region" | None
+    mask: Tensor
+    conditioning: dict
+
+    def to_list(self):
+        result: list[Region] = []
+        current = self
+        while current is not None:
+            result.append(current)
+            current = current.previous
+        return result
+
+
+class DefineRegion:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "mask": ("MASK",),
+                "conditioning": ("CONDITIONING",),
+            },
+            "optional": {
+                "regions": ("REGIONS",),
+            },
+        }
+
+    CATEGORY = "external_tooling/regions"
+    RETURN_TYPES = ("REGIONS",)
+    FUNCTION = "define"
+
+    def define(self, mask: Tensor, conditioning: dict, regions: Region | None = None):
+        return (Region(regions, mask, conditioning),)
+
+
+class AttentionMask:
 
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
                 "model": ("MODEL",),
-                "regions": ("LIST",),
+                "regions": ("REGIONS",),
             }
         }
 
     RETURN_TYPES = ("MODEL",)
-    FUNCTION = "attention_couple"
-    CATEGORY = "external_tooling"
+    FUNCTION = "attention_mask"
+    CATEGORY = "external_tooling/regions"
 
     mask: Tensor
     conds: list[Tensor]
     batch_size: int
 
-    def attention_couple(self, model: ModelPatcher, regions: ListWrapper):
+    def attention_mask(self, model: ModelPatcher, regions: Region):
         new_model = model.clone()
-        num_conds = len(regions.content)
+        region_list = regions.to_list()
+        num_conds = len(region_list)
 
-        mask = torch.stack([r["mask"] for r in regions.content], dim=0)
+        mask = torch.stack([r["mask"] for r in region_list], dim=0)
         mask_sum = mask.sum(dim=0, keepdim=True)
         assert mask_sum.sum() > 0, "There are areas that are zero in all masks."
         self.mask = mask / mask_sum
 
-        self.conds = [r["conditioning"][0][0] for r in regions.content]
+        self.conds = [r["conditioning"][0][0] for r in region_list]
         num_tokens = [cond.shape[1] for cond in self.conds]
 
         def attn2_patch(q: Tensor, k: Tensor, v: Tensor, extra_options: dict):
