@@ -49,7 +49,7 @@ class LoadMaskBase64:
         img = torch.from_numpy(img)
         if img.dim() == 3:  # RGB(A) input, use red channel
             img = img[:, :, 0]
-        return (img,)
+        return (img.unsqueeze(0),)
 
 
 class SendImageWebSocket:
