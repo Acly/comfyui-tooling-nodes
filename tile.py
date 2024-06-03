@@ -1,44 +1,63 @@
 import numpy as np
 import numpy.typing as npt
 import torch
+from kornia.filters import box_blur
 from torch import Tensor
-from .nodes import ListWrapper
 
 IntArray = npt.NDArray[np.int_]
 
 
 class TileLayout:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "min_tile_size": ("INT", {"default": 512, "min": 64, "max": 8192, "step": 8}),
+                "padding": ("INT", {"default": 32, "min": 0, "max": 8192, "step": 8}),
+                "blending": ("INT", {"default": 8, "min": 0, "max": 256, "step": 8}),
+            }
+        }
+
+    CATEGORY = "external_tooling/tiles"
+    RETURN_TYPES = ("TILE_LAYOUT",)
+    FUNCTION = "node"
+
     image_size: IntArray
     tile_size: IntArray
-    overlap: int
+    padding: int
+    blending: int
     tile_count: IntArray
 
-    def __init__(self, image_size: IntArray, min_tile_size: int, overlap: int):
-        assert all([x % 8 == 0 for x in image_size]), "Image size must be divisible by 8"
+    def node(self, image: Tensor, min_tile_size: int, padding: int, blending: int):
+        self.init(image, min_tile_size, padding, blending)
+        return (self,)
+
+    def init(self, image: Tensor, min_tile_size: int, padding: int, blending: int):
+        assert all([x % 8 == 0 for x in image.shape[-3:-1]]), "Image size must be divisible by 8"
         assert min_tile_size % 8 == 0, "Tile size must be divisible by 8"
-        assert min_tile_size > 2 * overlap, "Tile size must be larger than total overlap"
+        assert blending < padding, "Blending must be smaller than padding"
 
-        self.image_size = image_size
-        self.overlap = overlap
-        self.tile_count = image_size // (min_tile_size - overlap)
+        self.image_size = np.array(image.shape[-3:-1])
+        self.padding = padding
+        self.blending = blending
+        self.tile_count = self.image_size // (min_tile_size - 2 * padding)
 
-        image_size_with_overlap = self.image_size + (self.tile_count - 1) * overlap
+        image_size_with_overlap = self.image_size + (self.tile_count - 1) * 2 * padding
         tile_size = np.ceil(image_size_with_overlap / self.tile_count)
         self.tile_size = (np.ceil(tile_size / 8) * 8).astype(int)
 
     def size(self, coord: IntArray):
         return self.end(coord) - self.start(coord)
 
-    def start(self, coord: IntArray, overlap=True):
-        offset = coord * (self.tile_size - self.overlap)
-        if not overlap:
-            offset = offset + np.where(coord == 0, 0, self.overlap)
+    def start(self, coord: IntArray, pad=0):
+        offset = coord * (self.tile_size - 2 * self.padding)
+        offset = offset + np.where(coord == 0, 0, pad)
         return offset
 
-    def end(self, coord: IntArray, overlap=True):
+    def end(self, coord: IntArray, pad=0):
         end = self.start(coord) + self.tile_size
-        if not overlap:
-            end = end - np.where(coord == self.tile_count - 1, 0, self.overlap)
+        end = end - np.where(coord == self.tile_count - 1, 0, pad)
         return end.clip(0, self.image_size)
 
     def coord(self, index: int):
@@ -48,132 +67,87 @@ class TileLayout:
     def total_count(self):
         return self.tile_count.prod()
 
-    @property
-    def tiles(self):
-        for i in range(self.total_count):
-            c = self.coord(i)
-            yield self.start(c), self.end(c)
+    def rect(self, coord: IntArray):
+        s = self.start(coord)
+        e = self.end(coord)
+        return (slice(None), slice(s[0], e[0]), slice(s[1], e[1]), slice(None))
+
+    def tile(self, image: Tensor, index: int):
+        return image[self.rect(self.coord(index))]
+
+    def mask(self, coord: IntArray, blend: bool):
+        size = self.size(coord)
+        padding = self.padding if blend else self.padding - self.blending
+        s = self.start(coord, padding) - self.start(coord)
+        e = self.end(coord, padding) - self.start(coord)
+        mask = torch.zeros((1, 1, size[0], size[1]), dtype=torch.float)
+        mask[:, :, s[0] : e[0], s[1] : e[1]] = 1.0
+        if blend and self.blending > 0:
+            mask = box_blur(mask, (self.blending, self.blending), separable=True)
+        return mask.squeeze(0)
+
+    def merge(self, image: Tensor, index: int, tile: Tensor):
+        coord = self.coord(index)
+        rect = self.rect(coord)
+        mask = self.mask(coord, blend=True)
+        mask = mask.reshape(*mask.shape, 1).repeat(1, 1, 1, image.shape[-1])
+        image[*rect] = (1 - mask) * image[*rect] + mask * tile
 
 
-class SplitImageTiles:
+class ExtractImageTile:
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
                 "image": ("IMAGE",),
-                "min_tile_size": ("INT", {"default": 512, "min": 64, "max": 8192, "step": 8}),
-                "overlap": ("INT", {"default": 32, "min": 0, "max": 8192, "step": 8}),
+                "layout": ("TILE_LAYOUT",),
+                "index": ("INT", {"min": 0}),
             }
         }
 
-    CATEGORY = "external_tooling"
-    RETURN_TYPES = ("LIST", "TILE_LAYOUT")
-    FUNCTION = "tile"
+    CATEGORY = "external_tooling/tiles"
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "slice"
 
-    def tile(self, image: Tensor, min_tile_size: int, overlap: int):
-        layout = TileLayout(np.array(image.shape[-3:-1]), min_tile_size, overlap)
-        tiles = (image[:, start[0] : end[0], start[1] : end[1], :] for start, end in layout.tiles)
-        return (ListWrapper([{"image": t} for t in tiles]), layout)
+    def slice(self, image: Tensor, layout: TileLayout, index: int):
+        return (layout.tile(image, index),)
 
 
-def _gradient(dir: tuple[int, int], length: int, width: IntArray, channels: int):
-    if dir[0] != 0 and dir[1] != 0:
-        grad2d = _corner_gradient(dir, length)
-    else:
-        axis = 0 if dir[0] != 0 else 1
-        beg, end = (1, 0) if dir[axis] == 1 else (0, 1)
-        grad1d = torch.linspace(beg, end, length)
-        grad2d = grad1d.repeat((width[~axis], 1))
-        if axis == 0:
-            grad2d = grad2d.T
-    if channels > 1:
-        grad2d = grad2d.reshape(*grad2d.shape, 1).repeat(1, 1, channels)
-    return grad2d
-
-
-def _corner_gradient(dir: IntArray, length: int):
-    grad0 = _gradient(np.array((dir[0], 0)), length, np.array((length, length)), 1)
-    grad1 = _gradient(np.array((0, dir[1])), length, np.array((length, length)), 1)
-    return grad0 * grad1
-
-
-class MergeImageTiles:
+class GenerateTileMask:
     @classmethod
     def INPUT_TYPES(cls):
-        return {"required": {"tiles": ("LIST",), "layout": ("TILE_LAYOUT",)}}
+        return {
+            "required": {"layout": ("TILE_LAYOUT",), "index": ("INT", {"min": 0})},
+            "optional": {"blend": ("BOOLEAN",)},
+        }
 
-    CATEGORY = "external_tooling"
+    CATEGORY = "external_tooling/tiles"
+    RETURN_TYPES = ("MASK",)
+    FUNCTION = "generate"
+
+    def generate(self, layout: TileLayout, index: int, blend: bool = False):
+        return (layout.mask(layout.coord(index), blend=blend),)
+
+
+class MergeImageTile:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "layout": ("TILE_LAYOUT",),
+                "index": ("INT", {"min": 0}),
+                "tile": ("IMAGE",),
+            }
+        }
+
+    CATEGORY = "external_tooling/tiles"
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "merge"
 
-    def merge(self, tiles: ListWrapper, layout: TileLayout):
-        assert (
-            len(tiles.content) == layout.total_count
-        ), f"Expected {layout.total_count} tiles, got {len(tiles.content)}"
-        tiles: list[Tensor] = [t.get("image") for t in tiles.content]
-        assert all([t is not None for t in tiles]), "All list elements must be an image"
-
-        channels = tiles[0].shape[-1]
-        image_shape = (layout.image_size[0], layout.image_size[1], channels)
-        image = torch.zeros(image_shape, dtype=tiles[0].dtype, device=tiles[0].device)
-        for n, tile in enumerate(tiles):
-            if tile.dim() == 4:
-                tile = tile[0]
-            self._merge_tile(n, tile, image, layout)
-
-        return (image.unsqueeze(0),)
-
-    def _merge_tile(self, index: int, tile: Tensor, image: Tensor, layout: TileLayout):
-        overlap = layout.overlap
-        coord = layout.coord(index)
-        s = layout.start(coord)  #  offset of tile start relative to image origin
-        e = layout.end(coord)
-        si = layout.start(coord, overlap=False)  # start of inner tile non-overlap region
-        ei = layout.end(coord, overlap=False)  # end of inner tile non-overlap region
-        size = layout.size(coord)
-        #                            image
-        # +------------------------------------------------------- . .
-        # |
-        # |                       tile
-        # |             s +--------------------+
-        # |               |    <- overlap ->   |
-        # |               |  si                |
-        # |               |    +-----------+   |
-        # |               |    |           |   |
-        # |               |    +-----------+   |
-        # |               |                ei  |
-        # |               |                    |
-        # |               +--------------------+ e
-        # |
-        # |               <_______ size _______>
-        # .
-        # .
-        sr = si - s  # offset where start overlap ends relative to tile start
-        er = ei - s  # offset where end overlap starts relative to tile start
-
-        # copy tile center (without overlap borders)
-        image[si[0] : ei[0], si[1] : ei[1], :] += tile[sr[0] : er[0], sr[1] : er[1], :]
-
-        # copy overlap borders with gradient falloff towards neighbor tiles
-        directions = [(0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1)]
-        gradients = [_gradient(d, overlap, er - sr, channels=tile.shape[-1]) for d in directions]
-
-        for dir, g in zip(directions, gradients):
-            d = np.array(dir)
-            if (s + d < 0).any() or (e + d > layout.image_size).any():
-                continue  # No overlap at the image border
-
-            if dir == (0, 1):
-                image[si[0] : ei[0], ei[1] : e[1], :] += g * tile[sr[0] : er[0], er[1] : size[1], :]
-            elif dir == (0, -1):
-                image[si[0] : ei[0], s[1] : si[1], :] += g * tile[sr[0] : er[0], 0 : sr[1], :]
-            elif dir == (1, 0):
-                image[ei[0] : e[0], si[1] : ei[1], :] += g * tile[er[0] : size[0], sr[1] : er[1], :]
-            elif dir == (-1, 0):
-                image[s[0] : si[0], si[1] : ei[1], :] += g * tile[0 : sr[0], sr[1] : er[1], :]
-            else:  # corner
-                a = np.where(d == 1, ei, s)
-                b = np.where(d == 1, e, si)
-                at = np.where(d == 1, er, 0)
-                bt = np.where(d == 1, size, sr)
-                image[a[0] : b[0], a[1] : b[1], :] += g * tile[at[0] : bt[0], at[1] : bt[1], :]
+    def merge(self, image: Tensor, layout: TileLayout, index: int, tile: Tensor):
+        assert index < layout.total_count, f"Index {index} out of range"
+        if index == 0:
+            image = image.clone()
+        layout.merge(image, index, tile)
+        return (image,)
