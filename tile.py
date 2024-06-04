@@ -115,6 +115,26 @@ class ExtractImageTile:
         return (layout.tile(image, index),)
 
 
+class ExtractMaskTile:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "mask": ("MASK",),
+                "layout": ("TILE_LAYOUT",),
+                "index": ("INT", {"min": 0}),
+            }
+        }
+
+    CATEGORY = "external_tooling/tiles"
+    RETURN_TYPES = ("MASK",)
+    FUNCTION = "slice"
+
+    def slice(self, mask: Tensor, layout: TileLayout, index: int):
+        tile = layout.tile(mask.unsqueeze(3), index)
+        return (tile.squeeze(3),)
+
+
 class GenerateTileMask:
     @classmethod
     def INPUT_TYPES(cls):

@@ -8,9 +8,12 @@ NODE_CLASS_MAPPINGS = {
     "ETN_ApplyMaskToImage": nodes.ApplyMaskToImage,
     "ETN_TileLayout": tile.TileLayout,
     "ETN_ExtractImageTile": tile.ExtractImageTile,
+    "ETN_ExtractMaskTile": tile.ExtractMaskTile,
     "ETN_GenerateTileMask": tile.GenerateTileMask,
     "ETN_MergeImageTile": tile.MergeImageTile,
+    "ETN_BackgroundRegion": region.BackgroundRegion,
     "ETN_DefineRegion": region.DefineRegion,
+    "ETN_ListRegionMasks": region.ListRegionMasks,
     "ETN_AttentionMask": region.AttentionMask,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -23,8 +26,11 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ETN_ListElement": "List 🢒 Get Element",
     "ETN_TileLayout": "Create Tile Layout",
     "ETN_ExtractImageTile": "Extract Image Tile",
+    "ETN_ExtractMaskTile": "Extract Mask Tile",
     "ETN_MergeImageTile": "Merge Image Tile",
     "ETN_GenerateTileMask": "Generate Tile Mask",
+    "ETN_BackgroundRegion": "Background Region",
     "ETN_DefineRegion": "Define Region",
+    "ETN_ListRegionMasks": "List Region Masks",
     "ETN_AttentionMask": "Regions Attention Mask",
 }

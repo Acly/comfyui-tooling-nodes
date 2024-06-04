@@ -46,16 +46,36 @@ def lcm_for_list(numbers: list[int]):
 
 class Region(NamedTuple):
     previous: "Region" | None
-    mask: Tensor
+    mask: Tensor | None
     conditioning: list
 
-    def to_list(self):
+    def preprocess(self):
         result: list[Region] = []
         current = self
         while current is not None:
             result.append(current)
             current = current.previous
+        assert len(result) > 1, "At least 2 regions are required."
+
+        result = list(reversed(result))
+        if result[0].mask is None:  # BackgroundRegion
+            masks_above = torch.stack([r.mask for r in result[1:]], dim=0)
+            accumulated = torch.sum(masks_above, dim=0)
+            result[0] = Region(None, 1.0 - accumulated, result[0].conditioning)
         return result
+
+
+class BackgroundRegion:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {"conditioning": ("CONDITIONING",)}}
+
+    CATEGORY = "external_tooling/regions"
+    RETURN_TYPES = ("REGIONS",)
+    FUNCTION = "define"
+
+    def define(self, conditioning: list):
+        return (Region(None, None, conditioning),)
 
 
 class DefineRegion:
@@ -79,6 +99,19 @@ class DefineRegion:
         return (Region(regions, mask, conditioning),)
 
 
+class ListRegionMasks:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {"regions": ("REGIONS",)}}
+
+    CATEGORY = "external_tooling/regions"
+    RETURN_TYPES = ("MASK",)
+    FUNCTION = "get_masks"
+
+    def get_masks(self, regions: Region):
+        return (torch.stack([r.mask for r in regions.preprocess()], dim=0),)
+
+
 class AttentionMask:
 
     @classmethod
@@ -100,7 +133,7 @@ class AttentionMask:
 
     def attention_mask(self, model: ModelPatcher, regions: Region):
         new_model = model.clone()
-        region_list = regions.to_list()
+        region_list = regions.preprocess()
         num_conds = len(region_list)
 
         mask = torch.stack([r.mask for r in region_list], dim=0)
