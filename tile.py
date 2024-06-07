@@ -93,7 +93,7 @@ class TileLayout:
         rect = self.rect(coord)
         mask = self.mask(coord, blend=True)
         mask = mask.reshape(*mask.shape, 1).repeat(1, 1, 1, image.shape[-1])
-        image[*rect] = (1 - mask) * image[*rect] + mask * tile
+        image[rect] = (1 - mask) * image[rect] + mask * tile
 
 
 class ExtractImageTile:
