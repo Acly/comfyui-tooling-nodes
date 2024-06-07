@@ -166,14 +166,16 @@ class AttentionMask:
             conds_tensor = torch.cat(conds_tensor, dim=0)
 
             qs, ks = [], []
-            for i, cond_or_uncond in enumerate(cond_or_unconds):
-                k_target = k_chunks[i].repeat(1, lcm_tokens // k.shape[1], 1)
+            for i, cond_or_uncond in reversed(list(enumerate(cond_or_unconds))):
                 if cond_or_uncond == 1:  # uncond
-                    qs.append(q_chunks[i])
-                    ks.append(k_target)
+                    k_target = k_chunks[i].repeat(1, lcm_tokens // k.shape[1], 1)
+                    qs.insert(0, q_chunks[i])
+                    ks.insert(0, k_target)
                 else:
-                    qs.append(q_chunks[i].repeat(num_conds, 1, 1))
-                    ks.append(conds_tensor)
+                    qs.insert(0, q_chunks[i].repeat(num_conds, 1, 1))
+                    ks.insert(0, conds_tensor)
+                    for _ in range(num_conds - 1):
+                        cond_or_unconds.insert(i, 0)
 
             qs = torch.cat(qs, dim=0)
             ks = torch.cat(ks, dim=0)
@@ -186,8 +188,9 @@ class AttentionMask:
             )
             outputs: list[Tensor] = []
             pos = 0
-            for cond_or_uncond in cond_or_unconds:
-                if cond_or_uncond == 1:  # uncond
+            i = 0
+            while i < len(cond_or_unconds):
+                if cond_or_unconds[i] == 1:  # uncond
                     outputs.append(out[pos : pos + self.batch_size])
                     pos += self.batch_size
                 else:
@@ -196,6 +199,10 @@ class AttentionMask:
                     masked = masked.sum(dim=0)
                     outputs.append(masked)
                     pos += num_conds * self.batch_size
+                    for _ in range(num_conds - 1):
+                        cond_or_unconds.pop(i)
+                i += 1
+
             return torch.cat(outputs, dim=0)
 
         new_model.set_model_attn2_patch(attn2_patch)
