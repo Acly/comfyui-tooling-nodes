@@ -96,6 +96,8 @@ class DefineRegion:
     FUNCTION = "define"
 
     def define(self, mask: Tensor, conditioning: list, regions: Region | None = None):
+        if mask.dim() < 3:
+            mask = mask.unsqueeze(0)
         return (Region(regions, mask, conditioning),)
 
 
