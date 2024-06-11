@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-tooling-nodes"
 description = "Provides nodes and server API extensions geared towards using ComfyUI as a backend for external tools."
-version = "1.0.0"
+version = "1.1.0"
 license = "LICENSE"
 
 [project.urls]
