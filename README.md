@@ -58,7 +58,7 @@ Lists available models with additional classification info.
     ```
     {
         "checkpoint_file.safetensors": {
-            "base_model": "sd15"|"sd20"|"sd21"|"sdxl"|"ssd1b"|"svd"|"cascade-b"|"cascade-c",
+            "base_model": "sd15"|"sd20"|"sd21"|"sd3"|"sdxl"|"ssd1b"|"svd"|"cascade-b"|"cascade-c",
             "is_inpaint": true|false,
             "is_refiner": true|false
         },
