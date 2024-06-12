@@ -85,7 +85,7 @@ class TileLayout:
         mask = torch.zeros((1, 1, size[0], size[1]), dtype=torch.float)
         mask[:, :, s[0] : e[0], s[1] : e[1]] = 1.0
         if blend and self.blending > 0:
-            mask = box_blur(mask, (self.blending, self.blending), separable=True)
+            mask = box_blur(mask, (self.blending, self.blending))
         return mask.squeeze(0)
 
     def merge(self, image: Tensor, index: int, tile: Tensor):
