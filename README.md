@@ -50,7 +50,7 @@ Copies a mask into the alpha channel of an image.
 
 There are various types of models that can be loaded as checkpoint, LoRA, ControlNet, etc. which cannot be used interchangeably. The following API helps to categorize and filter them.
 
-### /etn/model_info
+### /api/etn/model_info
 
 Lists available models with additional classification info.
 * Paramters: _none_

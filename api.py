@@ -91,3 +91,7 @@ if _server := getattr(server.PromptServer, "instance", None):
             return web.json_response(info)
         except Exception as e:
             return web.json_response(dict(error=str(e)), status=500)
+
+    @_server.routes.get("/api/etn/model_info")
+    async def api_model_info(request):
+        return await model_info(request)
