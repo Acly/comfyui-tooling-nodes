@@ -41,7 +41,7 @@ class TileLayout:
         self.image_size = np.array(image.shape[-3:-1])
         self.padding = padding
         self.blending = blending
-        self.tile_count = self.image_size // (min_tile_size - 2 * padding)
+        self.tile_count = np.maximum(1, self.image_size // (min_tile_size - 2 * padding))
 
         image_size_with_overlap = self.image_size + (self.tile_count - 1) * 2 * padding
         tile_size = np.ceil(image_size_with_overlap / self.tile_count)
