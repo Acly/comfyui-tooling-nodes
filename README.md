@@ -2,7 +2,7 @@
 
 Provides nodes and API geared towards using ComfyUI as a backend for external tools.
 
-## Nodes for sending and receiving images
+## Sending and receiving images
 
 ComfyUI exchanges images via the filesystem. This requires a
 multi-step process (upload images, prompt, download images), is rather
@@ -36,7 +36,7 @@ That is two 32-bit integers (big endian) with values 1 and 2 followed by the PNG
 {'type': 'executed', 'data': {'node': '<node ID>', 'output': {'images': [{'source': 'websocket', 'content-type': 'image/png', 'type': 'output'}, ...]}, 'prompt_id': '<prompt ID>}}
 ```
 
-## Nodes for working on regions
+## Regions
 
 These nodes implement attention masking for arbitrary number of image regions. Text prompts only apply to the masked area.
 In contrast to condition masking, this method is less "forceful", but leads to more natural image compositions.
@@ -64,12 +64,55 @@ computed background mask.
 Patches the model to use the provided list of regions. This replaces the positive text conditioning which is provided
 to the sampler. It's still possible to pass ControlNet and other conditioning to the sampler.
 
-
 ### Apply Mask to Image
 
 Copies a mask into the alpha channel of an image.
 * Inputs: image and mask
 * Outputs: RGBA image with mask used as transparency
+
+
+## Tiles
+
+Splitting an image into tiles to be processed individually is a useful method to speed up
+diffusion and save VRAM. There are various nodes out there which provide a fixed pipeline.
+In contrast, the following nodes only provide a way to split an image into tiles and merge
+it back together. With tools and scripts it is feasible to generate individual workflows
+for each tile. This allows maximum flexibility (different prompts, regions, control, etc.).
+
+![Image tiles](workflows/image_tiles.png)
+[Workflow: image_tiles.json](workflows/image_tiles.json)
+
+### Create Tile Layout
+
+This node defines the tiling parameters:
+* **min_tile_size**: Minimum resolution of each tile in pixels. Tiles may be larger to fit the image size evenly.
+* **padding**: Padding around each tile in pixels. Overlaps with neighbour tiles. There is no padding at the image borders.
+* **blending**: The part of the padding area which is used for smooth blending to avoid seams. Affects masks which are generated from this layout.
+
+The number of tiles is: `image_size // (min_tile_size + 2 * padding)`
+
+### Extract Image Tile
+
+Splits out part of an image. Tile indices range from 0 to number of tiles and are column-major
+(tile 1 is usually below tile 0).
+
+### Extract Mask Tile
+
+Same as "Extract Image Tile" but for masks.
+
+### Merge Image Tile
+
+Merges a tile into a full image, usually after sampling. Uses a smooth transition overlap
+between neighbouring tiles depending on padding and blending values.
+
+### Generate Tile Mask
+
+Creates a coverage mask for a certain tile. The size of the mask matches the image tile size.
+The image area will be white (1) and the padding area black (0), with a smooth transition
+depending on the chosen blend size. 
+
+This mask is used internally by "Merge Image Tile", but it can also be useful as input for "Set Latent Noise Mask" in upscale workflows.
+
 
 ## API for model inspection
 

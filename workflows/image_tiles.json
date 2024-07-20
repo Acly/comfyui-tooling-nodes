@@ -1,0 +1,771 @@
+{
+  "last_node_id": 78,
+  "last_link_id": 126,
+  "nodes": [
+    {
+      "id": 60,
+      "type": "LoadImage",
+      "pos": [
+        -692,
+        -758
+      ],
+      "size": {
+        "0": 310.5925598144531,
+        "1": 335.9309997558594
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            101,
+            110,
+            111,
+            112,
+            113
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "photo.jpg",
+        "image"
+      ]
+    },
+    {
+      "id": 74,
+      "type": "ETN_MergeImageTile",
+      "pos": [
+        -326,
+        -250
+      ],
+      "size": {
+        "0": 315,
+        "1": 98
+      },
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 120
+        },
+        {
+          "name": "layout",
+          "type": "TILE_LAYOUT",
+          "link": 122,
+          "slot_index": 1
+        },
+        {
+          "name": "tile",
+          "type": "IMAGE",
+          "link": 121
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            123
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ETN_MergeImageTile"
+      },
+      "widgets_values": [
+        3
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 61,
+      "type": "ETN_TileLayout",
+      "pos": [
+        -333,
+        -639
+      ],
+      "size": {
+        "0": 315,
+        "1": 106
+      },
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 101
+        }
+      ],
+      "outputs": [
+        {
+          "name": "TILE_LAYOUT",
+          "type": "TILE_LAYOUT",
+          "links": [
+            102,
+            104,
+            105,
+            106,
+            122,
+            124
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ETN_TileLayout"
+      },
+      "widgets_values": [
+        880,
+        48,
+        16
+      ]
+    },
+    {
+      "id": 63,
+      "type": "PreviewImage",
+      "pos": [
+        380,
+        -700
+      ],
+      "size": {
+        "0": 221.69317626953125,
+        "1": 191.44602966308594
+      },
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 103
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 69,
+      "type": "PreviewImage",
+      "pos": [
+        620,
+        -470
+      ],
+      "size": {
+        "0": 231.39317321777344,
+        "1": 200.04603576660156
+      },
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 109
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 75,
+      "type": "PreviewImage",
+      "pos": [
+        25,
+        -220
+      ],
+      "size": {
+        "0": 321.5931701660156,
+        "1": 266.5460205078125
+      },
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 123
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 76,
+      "type": "ETN_GenerateTileMask",
+      "pos": [
+        376,
+        -207
+      ],
+      "size": {
+        "0": 210,
+        "1": 85.74603271484375
+      },
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "layout",
+          "type": "TILE_LAYOUT",
+          "link": 124,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            125
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ETN_GenerateTileMask"
+      },
+      "widgets_values": [
+        3,
+        true
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 77,
+      "type": "MaskToImage",
+      "pos": [
+        620,
+        -210
+      ],
+      "size": {
+        "0": 210,
+        "1": 26
+      },
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 125
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            126
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MaskToImage"
+      }
+    },
+    {
+      "id": 78,
+      "type": "PreviewImage",
+      "pos": [
+        629,
+        -140
+      ],
+      "size": {
+        "0": 227.79318237304688,
+        "1": 201.64602661132812
+      },
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 126
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 71,
+      "type": "EmptyImage",
+      "pos": [
+        -681,
+        -247
+      ],
+      "size": {
+        "0": 315,
+        "1": 130
+      },
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            120
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EmptyImage"
+      },
+      "widgets_values": [
+        2304,
+        1728,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 67,
+      "type": "PreviewImage",
+      "pos": [
+        380,
+        -470
+      ],
+      "size": {
+        "0": 222.79318237304688,
+        "1": 197.94602966308594
+      },
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 107
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 68,
+      "type": "PreviewImage",
+      "pos": [
+        620,
+        -703
+      ],
+      "size": {
+        "0": 225.89317321777344,
+        "1": 194.74603271484375
+      },
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 108
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 65,
+      "type": "ETN_ExtractImageTile",
+      "pos": [
+        30,
+        -760
+      ],
+      "size": {
+        "0": 278.19317626953125,
+        "1": 78
+      },
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 110
+        },
+        {
+          "name": "layout",
+          "type": "TILE_LAYOUT",
+          "link": 105
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            108
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ETN_ExtractImageTile"
+      },
+      "widgets_values": [
+        2
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 62,
+      "type": "ETN_ExtractImageTile",
+      "pos": [
+        40,
+        -630
+      ],
+      "size": {
+        "0": 274.19317626953125,
+        "1": 78
+      },
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 113,
+          "slot_index": 0
+        },
+        {
+          "name": "layout",
+          "type": "TILE_LAYOUT",
+          "link": 102
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            103
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ETN_ExtractImageTile"
+      },
+      "widgets_values": [
+        0
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 64,
+      "type": "ETN_ExtractImageTile",
+      "pos": [
+        40,
+        -510
+      ],
+      "size": {
+        "0": 273.2931823730469,
+        "1": 78
+      },
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 111
+        },
+        {
+          "name": "layout",
+          "type": "TILE_LAYOUT",
+          "link": 104
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            107
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ETN_ExtractImageTile"
+      },
+      "widgets_values": [
+        1
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 66,
+      "type": "ETN_ExtractImageTile",
+      "pos": [
+        40,
+        -370
+      ],
+      "size": {
+        "0": 275.4931945800781,
+        "1": 78
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 112
+        },
+        {
+          "name": "layout",
+          "type": "TILE_LAYOUT",
+          "link": 106
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            109,
+            121
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ETN_ExtractImageTile"
+      },
+      "widgets_values": [
+        3
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    }
+  ],
+  "links": [
+    [
+      101,
+      60,
+      0,
+      61,
+      0,
+      "IMAGE"
+    ],
+    [
+      102,
+      61,
+      0,
+      62,
+      1,
+      "TILE_LAYOUT"
+    ],
+    [
+      103,
+      62,
+      0,
+      63,
+      0,
+      "IMAGE"
+    ],
+    [
+      104,
+      61,
+      0,
+      64,
+      1,
+      "TILE_LAYOUT"
+    ],
+    [
+      105,
+      61,
+      0,
+      65,
+      1,
+      "TILE_LAYOUT"
+    ],
+    [
+      106,
+      61,
+      0,
+      66,
+      1,
+      "TILE_LAYOUT"
+    ],
+    [
+      107,
+      64,
+      0,
+      67,
+      0,
+      "IMAGE"
+    ],
+    [
+      108,
+      65,
+      0,
+      68,
+      0,
+      "IMAGE"
+    ],
+    [
+      109,
+      66,
+      0,
+      69,
+      0,
+      "IMAGE"
+    ],
+    [
+      110,
+      60,
+      0,
+      65,
+      0,
+      "IMAGE"
+    ],
+    [
+      111,
+      60,
+      0,
+      64,
+      0,
+      "IMAGE"
+    ],
+    [
+      112,
+      60,
+      0,
+      66,
+      0,
+      "IMAGE"
+    ],
+    [
+      113,
+      60,
+      0,
+      62,
+      0,
+      "IMAGE"
+    ],
+    [
+      120,
+      71,
+      0,
+      74,
+      0,
+      "IMAGE"
+    ],
+    [
+      121,
+      66,
+      0,
+      74,
+      2,
+      "IMAGE"
+    ],
+    [
+      122,
+      61,
+      0,
+      74,
+      1,
+      "TILE_LAYOUT"
+    ],
+    [
+      123,
+      74,
+      0,
+      75,
+      0,
+      "IMAGE"
+    ],
+    [
+      124,
+      61,
+      0,
+      76,
+      0,
+      "TILE_LAYOUT"
+    ],
+    [
+      125,
+      76,
+      0,
+      77,
+      0,
+      "MASK"
+    ],
+    [
+      126,
+      77,
+      0,
+      78,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.9090909090909091,
+      "offset": [
+        899.4068198252606,
+        850.8539704011341
+      ]
+    }
+  },
+  "version": 0.4
+}
