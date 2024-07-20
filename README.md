@@ -38,7 +38,32 @@ That is two 32-bit integers (big endian) with values 1 and 2 followed by the PNG
 
 ## Nodes for working on regions
 
-When integrating ComfyUI into tools which use layers and compose them on the fly, it is useful to only receive relevant masked regions.
+These nodes implement attention masking for arbitrary number of image regions. Text prompts only apply to the masked area.
+In contrast to condition masking, this method is less "forceful", but leads to more natural image compositions.
+
+![Regions Attention Mask](workflows/region_attention_mask.png)
+[Workflow: region_attention_mask.json](workflows/region_attention_mask.json)
+
+### Background Region
+
+This node starts a list of regions. It takes a prompt, but no mask. The prompt is assigned to all image areas which are _not_
+covered by another region mask in the list.
+
+### Define Region
+
+Appends a new region to a region list (or starts a new list). Takes a prompt, and mask which defines the area in the image
+the prompt will apply to. Masks must be the same size as the image _or_ the latent (which is factor 8 smaller).
+
+### List Region Masks
+
+This node takes a list of regions and outputs all their masks. It can be useful for inspection, debugging or to reuse the
+computed background mask.
+
+### Regions Attention Mask
+
+Patches the model to use the provided list of regions. This replaces the positive text conditioning which is provided
+to the sampler. It's still possible to pass ControlNet and other conditioning to the sampler.
+
 
 ### Apply Mask to Image
 

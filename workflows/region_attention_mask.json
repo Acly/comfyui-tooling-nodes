@@ -1,0 +1,955 @@
+{
+  "last_node_id": 59,
+  "last_link_id": 100,
+  "nodes": [
+    {
+      "id": 57,
+      "type": "ETN_LoadMaskBase64",
+      "pos": [
+        -590,
+        -160
+      ],
+      "size": {
+        "0": 315,
+        "1": 58
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            97,
+            99
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ETN_LoadMaskBase64"
+      },
+      "widgets_values": [
+        "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"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 24,
+      "type": "KSampler",
+      "pos": [
+        544,
+        -714
+      ],
+      "size": {
+        "0": 315,
+        "1": 262
+      },
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 88
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 91
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 76
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 75,
+          "slot_index": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            29
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        107677387783415,
+        "increment",
+        24,
+        6,
+        "euler_ancestral",
+        "normal",
+        1
+      ]
+    },
+    {
+      "id": 50,
+      "type": "ETN_AttentionMask",
+      "pos": [
+        257,
+        -649
+      ],
+      "size": {
+        "0": 210,
+        "1": 46
+      },
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 100
+        },
+        {
+          "name": "regions",
+          "type": "REGIONS",
+          "link": 89
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            88
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ETN_AttentionMask"
+      }
+    },
+    {
+      "id": 45,
+      "type": "CLIPTextEncode",
+      "pos": [
+        260,
+        -557
+      ],
+      "size": {
+        "0": 210.05491638183594,
+        "1": 76
+      },
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 77,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            76
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "text, watermark"
+      ]
+    },
+    {
+      "id": 44,
+      "type": "EmptyLatentImage",
+      "pos": [
+        258,
+        -440
+      ],
+      "size": {
+        "0": 215.85491943359375,
+        "1": 106
+      },
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            75
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EmptyLatentImage"
+      },
+      "widgets_values": [
+        512,
+        512,
+        1
+      ]
+    },
+    {
+      "id": 25,
+      "type": "VAEDecode",
+      "pos": [
+        552,
+        -402
+      ],
+      "size": {
+        "0": 210,
+        "1": 46
+      },
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 29
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 39
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            30
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      }
+    },
+    {
+      "id": 46,
+      "type": "CLIPTextEncode",
+      "pos": [
+        -148,
+        -757
+      ],
+      "size": {
+        "0": 308.3658142089844,
+        "1": 114.6787338256836
+      },
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 90
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            80,
+            91
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "a table made of dark wood"
+      ],
+      "color": "#332922",
+      "bgcolor": "#593930"
+    },
+    {
+      "id": 47,
+      "type": "ETN_BackgroundRegion",
+      "pos": [
+        -142,
+        -605
+      ],
+      "size": [
+        294.1549157119323,
+        26.842732078205245
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 80
+        }
+      ],
+      "outputs": [
+        {
+          "name": "REGIONS",
+          "type": "REGIONS",
+          "links": [
+            83
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ETN_BackgroundRegion"
+      },
+      "color": "#332922",
+      "bgcolor": "#593930"
+    },
+    {
+      "id": 48,
+      "type": "ETN_DefineRegion",
+      "pos": [
+        -140,
+        -517
+      ],
+      "size": {
+        "0": 254.40000915527344,
+        "1": 66
+      },
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 96
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 82
+        },
+        {
+          "name": "regions",
+          "type": "REGIONS",
+          "link": 83
+        }
+      ],
+      "outputs": [
+        {
+          "name": "REGIONS",
+          "type": "REGIONS",
+          "links": [
+            86
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ETN_DefineRegion"
+      },
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 56,
+      "type": "PreviewImage",
+      "pos": [
+        -138,
+        -408
+      ],
+      "size": [
+        181.2549157119322,
+        203.84273207820524
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 95
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 49,
+      "type": "ETN_DefineRegion",
+      "pos": [
+        -133,
+        -150
+      ],
+      "size": {
+        "0": 254.40000915527344,
+        "1": 66
+      },
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 99
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 85
+        },
+        {
+          "name": "regions",
+          "type": "REGIONS",
+          "link": 86
+        }
+      ],
+      "outputs": [
+        {
+          "name": "REGIONS",
+          "type": "REGIONS",
+          "links": [
+            89
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ETN_DefineRegion"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 59,
+      "type": "PreviewImage",
+      "pos": [
+        -128,
+        -42
+      ],
+      "size": [
+        163.55491571193227,
+        192.0427320782053
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 98
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 26,
+      "type": "PreviewImage",
+      "pos": [
+        244,
+        -290
+      ],
+      "size": [
+        395.1549157119322,
+        426.5427320782053
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 30
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 58,
+      "type": "MaskToImage",
+      "pos": [
+        -584,
+        -61
+      ],
+      "size": {
+        "0": 210,
+        "1": 26
+      },
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 97
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            98
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MaskToImage"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 54,
+      "type": "ETN_LoadMaskBase64",
+      "pos": [
+        -590,
+        -580
+      ],
+      "size": {
+        "0": 315,
+        "1": 58
+      },
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            94,
+            96
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ETN_LoadMaskBase64"
+      },
+      "widgets_values": [
+        "iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAAAAADRE4smAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAQ+klEQVR4Ae3deZBUxR3A8UYRORZZ2IRVlKAiIoiEw4OgiCAmVordKBHjUVE0RlMxeFRpGakcVkqNpkqkYpWVQBBREiVWokaMEjUoEQ8kqMELBF1AXAQ2BDUsbBY2syDLY5mZ7ev16+75+o9vZl53/36f3483M2/fzAjBfwgggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIKAs0E55RKoDyirLO7XfsbXDzgM6iO2f1a1PdTEmzwlk2wDte1d279KtsrzzQU0H9OzRrbxH2b5Fafxw+bJ/N1T26VVR1qFp+6eb1uVuv7vvLtwyE8isATqffsqw4/tqBL/5xQXz39EYxxCPBPpc90yTyX9Lp/TxKBtC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"
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 55,
+      "type": "MaskToImage",
+      "pos": [
+        -580,
+        -480
+      ],
+      "size": {
+        "0": 210,
+        "1": 26
+      },
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 94
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            95
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MaskToImage"
+      },
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 21,
+      "type": "CLIPTextEncode",
+      "pos": [
+        -521,
+        24
+      ],
+      "size": {
+        "0": 318.3658142089844,
+        "1": 113.6787338256836
+      },
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 22
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            85
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "green pineapple"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 4,
+      "type": "CheckpointLoaderSimple",
+      "pos": [
+        -590,
+        -750
+      ],
+      "size": {
+        "0": 347.2549133300781,
+        "1": 98
+      },
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            100
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            3,
+            22,
+            77,
+            90
+          ],
+          "slot_index": 1
+        },
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            39
+          ],
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CheckpointLoaderSimple"
+      },
+      "widgets_values": [
+        "disneyPixarCartoon_v10.safetensors"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "CLIPTextEncode",
+      "pos": [
+        -520,
+        -382
+      ],
+      "size": {
+        "0": 308.3658142089844,
+        "1": 114.6787338256836
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            82
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "pink apple"
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    }
+  ],
+  "links": [
+    [
+      3,
+      4,
+      1,
+      6,
+      0,
+      "CLIP"
+    ],
+    [
+      22,
+      4,
+      1,
+      21,
+      0,
+      "CLIP"
+    ],
+    [
+      29,
+      24,
+      0,
+      25,
+      0,
+      "LATENT"
+    ],
+    [
+      30,
+      25,
+      0,
+      26,
+      0,
+      "IMAGE"
+    ],
+    [
+      39,
+      4,
+      2,
+      25,
+      1,
+      "VAE"
+    ],
+    [
+      75,
+      44,
+      0,
+      24,
+      3,
+      "LATENT"
+    ],
+    [
+      76,
+      45,
+      0,
+      24,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      77,
+      4,
+      1,
+      45,
+      0,
+      "CLIP"
+    ],
+    [
+      80,
+      46,
+      0,
+      47,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      82,
+      6,
+      0,
+      48,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      83,
+      47,
+      0,
+      48,
+      2,
+      "REGIONS"
+    ],
+    [
+      85,
+      21,
+      0,
+      49,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      86,
+      48,
+      0,
+      49,
+      2,
+      "REGIONS"
+    ],
+    [
+      88,
+      50,
+      0,
+      24,
+      0,
+      "MODEL"
+    ],
+    [
+      89,
+      49,
+      0,
+      50,
+      1,
+      "REGIONS"
+    ],
+    [
+      90,
+      4,
+      1,
+      46,
+      0,
+      "CLIP"
+    ],
+    [
+      91,
+      46,
+      0,
+      24,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      94,
+      54,
+      0,
+      55,
+      0,
+      "MASK"
+    ],
+    [
+      95,
+      55,
+      0,
+      56,
+      0,
+      "IMAGE"
+    ],
+    [
+      96,
+      54,
+      0,
+      48,
+      0,
+      "MASK"
+    ],
+    [
+      97,
+      57,
+      0,
+      58,
+      0,
+      "MASK"
+    ],
+    [
+      98,
+      58,
+      0,
+      59,
+      0,
+      "IMAGE"
+    ],
+    [
+      99,
+      57,
+      0,
+      49,
+      0,
+      "MASK"
+    ],
+    [
+      100,
+      4,
+      0,
+      50,
+      0,
+      "MODEL"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.9090909090909091,
+      "offset": [
+        903.345084288069,
+        823.4572679217949
+      ]
+    }
+  },
+  "version": 0.4
+}
