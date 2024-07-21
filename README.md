@@ -2,7 +2,15 @@
 
 Provides nodes and API geared towards using ComfyUI as a backend for external tools.
 
-## Sending and receiving images
+* <a href="#images">Sending and receiving images</a>
+* <a href="#regions">Regions (Attention Masking)
+* <a href="#tiles">Tiled image processing
+* <a href="#misc">Miscellanious nodes
+* <a href="#api">Http API extensions (Model inspection)
+* <a href="#installation">⭳ Installation</a>
+
+
+## <a id="images" href="#toc">Sending and receiving images</a>
 
 ComfyUI exchanges images via the filesystem. This requires a
 multi-step process (upload images, prompt, download images), is rather
@@ -36,7 +44,7 @@ That is two 32-bit integers (big endian) with values 1 and 2 followed by the PNG
 {'type': 'executed', 'data': {'node': '<node ID>', 'output': {'images': [{'source': 'websocket', 'content-type': 'image/png', 'type': 'output'}, ...]}, 'prompt_id': '<prompt ID>}}
 ```
 
-## Regions
+## <a id="regions" href="#toc">Regions</a>
 
 These nodes implement attention masking for arbitrary number of image regions. Text prompts only apply to the masked area.
 In contrast to condition masking, this method is less "forceful", but leads to more natural image compositions.
@@ -71,7 +79,7 @@ Copies a mask into the alpha channel of an image.
 * Outputs: RGBA image with mask used as transparency
 
 
-## Tiles
+## <a id="tiles" href="#toc">Tiles</a>
 
 Splitting an image into tiles to be processed individually is a useful method to speed up
 diffusion and save VRAM. There are various nodes out there which provide a fixed pipeline.
@@ -114,7 +122,19 @@ depending on the chosen blend size.
 This mask is used internally by "Merge Image Tile", but it can also be useful as input for "Set Latent Noise Mask" in upscale workflows.
 
 
-## API for model inspection
+## <a id="misc" href="#toc">Miscellaneous Nodes</a>
+
+### NSFW Filter
+
+Checks images for NSFW content using [Safety-Checker](https://huggingface.co/CompVis/stable-diffusion-safety-checker). Images which don't pass the check are blurred to
+obfuscate contents. Model is downloaded on first use.
+
+Inputs: image and sensitivity (0.5 for explicit content only, 0.7+ to include partial nudity).
+
+**Important:** the filter isn't perfect. Some explicit content may slip through.
+
+
+## <a id="api" href="#toc">API for model inspection</a>
 
 There are various types of models that can be loaded as checkpoint, LoRA, ControlNet, etc. which cannot be used interchangeably. The following API helps to categorize and filter them.
 
@@ -137,7 +157,7 @@ Lists available models with additional classification info.
 
 _Note: currently only supports checkpoints. May add other models in the future._
 
-## Installation
+## <a id="installation" href="#toc">Installation</a>
 
 Download the repository and unpack into the `custom_nodes` folder in the ComfyUI installation directory.
 

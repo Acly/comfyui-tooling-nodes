@@ -1,4 +1,4 @@
-from . import api, nodes, tile, region
+from . import api, nodes, tile, region, nsfw
 
 NODE_CLASS_MAPPINGS = {
     "ETN_LoadImageBase64": nodes.LoadImageBase64,
@@ -15,6 +15,7 @@ NODE_CLASS_MAPPINGS = {
     "ETN_DefineRegion": region.DefineRegion,
     "ETN_ListRegionMasks": region.ListRegionMasks,
     "ETN_AttentionMask": region.AttentionMask,
+    "ETN_NSFWFilter": nsfw.NSFWFilter,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "ETN_LoadImageBase64": "Load Image (Base64)",
@@ -33,4 +34,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ETN_DefineRegion": "Define Region",
     "ETN_ListRegionMasks": "List Region Masks",
     "ETN_AttentionMask": "Regions Attention Mask",
+    "ETN_NSFWFilter": "NSFW Filter",
 }
