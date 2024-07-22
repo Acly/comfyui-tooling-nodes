@@ -1,5 +1,6 @@
 """Text translation using Argos Translate."""
 
+import re
 from functools import cache
 
 
@@ -37,7 +38,9 @@ def translate(text: str, language: str):
             print("Downloading and installing translation package", pkg)
             pkg.install()
 
-        return translate(text, language, target)
+        text, embeddings = _extract_embeddings(text)
+        translation = translate(text, language, target)
+        return embeddings + translation
 
     except ImportError:
         raise ImportError(
@@ -62,3 +65,16 @@ class Translate:
 
     def translate(self, text: str, language: str, target: str):
         return (translate(text, language),)
+
+
+_embedding_regex = re.compile(r"(embedding:[^\s,]+)")
+
+
+def _extract_embeddings(text: str):
+    matches = _embedding_regex.findall(text)
+    embeddings = " ".join(matches)
+    if matches:
+        embeddings += " "
+    for m in matches:
+        text = text.replace(m, "")
+    return text, embeddings
