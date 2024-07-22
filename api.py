@@ -8,6 +8,8 @@ from comfy import model_detection
 import folder_paths
 import server
 
+from .translation import available_languages, translate
+
 input_block_name = "model.diffusion_model.input_blocks.0.0.weight"
 
 model_names = {
@@ -95,3 +97,21 @@ if _server := getattr(server.PromptServer, "instance", None):
     @_server.routes.get("/api/etn/model_info")
     async def api_model_info(request):
         return await model_info(request)
+
+    @_server.routes.get("/api/etn/languages")
+    async def languages(request):
+        try:
+            result = [dict(name=name, code=code) for code, name in available_languages()]
+            return web.json_response(result)
+        except Exception as e:
+            return web.json_response(dict(error=str(e)), status=500)
+
+    @_server.routes.get("/api/etn/translate/{lang}/{text}")
+    async def translate_text(request):
+        try:
+            language = request.match_info.get("lang", "en")
+            text = request.match_info.get("text", "")
+            result = translate(text, language)
+            return web.json_response(result)
+        except Exception as e:
+            return web.json_response(dict(error=str(e)), status=500)

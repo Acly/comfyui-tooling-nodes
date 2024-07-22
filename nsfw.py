@@ -68,7 +68,7 @@ class CLIPSafetyChecker(PreTrainedModel):
         for idx in images_to_filter:
             filtered = images[idx].unsqueeze(0)
             filtered = F.interpolate(filtered, size=64, mode="nearest")
-            filtered = box_blur(filtered, 7, separable=True)
+            filtered = box_blur(filtered, 11, separable=True)
             filtered = F.interpolate(filtered, size=orig_size, mode="bilinear")
             images[idx] = filtered.squeeze(0)
         return images

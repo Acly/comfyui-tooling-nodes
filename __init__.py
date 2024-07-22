@@ -1,4 +1,4 @@
-from . import api, nodes, tile, region, nsfw
+from . import api, nodes, tile, region, nsfw, translation
 
 NODE_CLASS_MAPPINGS = {
     "ETN_LoadImageBase64": nodes.LoadImageBase64,
@@ -16,6 +16,7 @@ NODE_CLASS_MAPPINGS = {
     "ETN_ListRegionMasks": region.ListRegionMasks,
     "ETN_AttentionMask": region.AttentionMask,
     "ETN_NSFWFilter": nsfw.NSFWFilter,
+    "ETN_Translate": translation.Translate,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "ETN_LoadImageBase64": "Load Image (Base64)",
@@ -23,8 +24,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ETN_SendImageWebSocket": "Send Image (WebSocket)",
     "ETN_CropImage": "Crop Image",
     "ETN_ApplyMaskToImage": "Apply Mask to Image",
-    "ETN_ListAppend": "List 🢒 Append",
-    "ETN_ListElement": "List 🢒 Get Element",
     "ETN_TileLayout": "Create Tile Layout",
     "ETN_ExtractImageTile": "Extract Image Tile",
     "ETN_ExtractMaskTile": "Extract Mask Tile",
@@ -35,4 +34,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ETN_ListRegionMasks": "List Region Masks",
     "ETN_AttentionMask": "Regions Attention Mask",
     "ETN_NSFWFilter": "NSFW Filter",
+    "ETN_Translate": "Translate Text",
 }
