@@ -66,7 +66,6 @@ class Translate:
 
     def translate(self, text: str):
         chunks = Chunk.parse(text)
-        print(chunks)
         translated = " ".join(translate(c.text, c.lang) for c in chunks)
         return (translated,)
 
