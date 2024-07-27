@@ -124,6 +124,27 @@ This mask is used internally by "Merge Image Tile", but it can also be useful as
 
 ## <a id="misc" href="#toc">Miscellaneous Nodes</a>
 
+<a id="node-translate"></a>
+### Translate Text
+
+Node which translates a string into English. The language to translate from is indicated with a
+_language directive_ of the form `lang:xx` where xx is a 2-letter language code. Multiple
+directives are allowed and change language for any text that comes after, until the next
+directive. `lang:en` (the default) passes through text fragments untouched. Useful
+for keywords, tags and such.
+
+Examples:
+| Input | Output |
+|:-|:-|
+| lang:de eine modische handtasche aus grünem kunstleder | a fashionable handbag made of green suede |
+| origami paperwork, lang:zh 狐狸和鹤, lang:en mountain view | origami paperwork, Fox and crane, mountain view |
+
+Translation happens entirely local, powered by [argosopentech/argos-translate](https://github.com/argosopentech/argos-translate):
+* Install with `pip install argostranslate` or `pip install -r requirements.txt`
+* Models are automatically downloaded on first use.
+
+There is also a [translation API](#api-translation) for immediate feedback in tool UI.
+
 ### NSFW Filter
 
 Checks images for NSFW content using [Safety-Checker](https://huggingface.co/CompVis/stable-diffusion-safety-checker). Images which don't pass the check are blurred to
@@ -134,11 +155,11 @@ Inputs: image and sensitivity (0.5 for explicit content only, 0.7+ to include pa
 **Important:** the filter isn't perfect. Some explicit content may slip through.
 
 
-## <a id="api" href="#toc">API for model inspection</a>
-
-There are various types of models that can be loaded as checkpoint, LoRA, ControlNet, etc. which cannot be used interchangeably. The following API helps to categorize and filter them.
+## <a id="api" href="#toc">API extensions</a>
 
 ### /api/etn/model_info
+
+There are various types of models that can be loaded as checkpoint, LoRA, ControlNet, etc. which cannot be used interchangeably. This endpoint helps to categorize and filter them.
 
 Lists available models with additional classification info.
 * Paramters: _none_
@@ -156,6 +177,16 @@ Lists available models with additional classification info.
     The entry is `{"base_model": "unknown"}` for models which are not in safetensors format or do not match any of the known base models.
 
 _Note: currently only supports checkpoints. May add other models in the future._
+
+<a id="api-translation"></a>
+### /api/etn/translate/{lang}/{text}
+
+Translates `text` into English. `lang` is a 2-letter code indicating the language to translate
+from. `text` may also contain _language directives_ to only translate some fragments.
+See the [node documentation](#node-translate) for details.
+
+* Output: JSON string
+* Example: `/api/etn/translate/de/eine%20modische%20Handtasche` -> `"a fashionable handbag"`
 
 ## <a id="installation" href="#toc">Installation</a>
 

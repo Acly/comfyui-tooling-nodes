@@ -111,7 +111,7 @@ if _server := getattr(server.PromptServer, "instance", None):
         try:
             language = request.match_info.get("lang", "en")
             text = request.match_info.get("text", "")
-            result = translate(text, language)
+            result = translate(f"lang:{language} {text}")
             return web.json_response(result)
         except Exception as e:
             return web.json_response(dict(error=str(e)), status=500)

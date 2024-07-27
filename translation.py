@@ -23,7 +23,7 @@ def available_languages():
         return [("NOT INSTALLED", "NOT INSTALLED")]
 
 
-def translate(text: str, language: str):
+def translate_chunk(text: str, language: str):
     if text.strip() == "":
         return text
 
@@ -55,6 +55,11 @@ def translate(text: str, language: str):
         )
 
 
+def translate(text: str):
+    chunks = Chunk.parse(text)
+    return " ".join(translate_chunk(c.text, c.lang) for c in chunks)
+
+
 class Translate:
     @staticmethod
     def INPUT_TYPES():
@@ -65,9 +70,7 @@ class Translate:
     FUNCTION = "translate"
 
     def translate(self, text: str):
-        chunks = Chunk.parse(text)
-        translated = " ".join(translate(c.text, c.lang) for c in chunks)
-        return (translated,)
+        return (translate(text),)
 
 
 _lang_regex = re.compile(r"(lang:\w\w)")
