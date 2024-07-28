@@ -6,6 +6,7 @@ language code. Text fragments after a language directives are translated.
 If the language is `en` text is passed through unmodified.
 """
 
+from __future__ import annotations
 import re
 from functools import cache
 from typing import NamedTuple

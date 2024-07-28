@@ -1,3 +1,4 @@
+from __future__ import annotations
 from weakref import ref as WeakRef
 from pathlib import Path
 from tqdm import tqdm
