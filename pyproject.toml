@@ -2,7 +2,7 @@
 name = "comfyui-tooling-nodes"
 description = "Provides nodes and server API extensions geared towards using ComfyUI as a backend for external tools."
 version = "1.3.0"
-license = "LICENSE"
+license = { file = "LICENSE" }
 
 [project.urls]
 Repository = "https://github.com/Acly/comfyui-tooling-nodes"
