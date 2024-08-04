@@ -25,6 +25,11 @@ model_names = {
     "Stable_Cascade_B": "cascade-b",
     "Stable_Cascade_C": "cascade-c",
     "SD3": "sd3",
+    "AuraFlow": "aura-flow",
+    "HunyuanDiT": "hunyuan-dit",
+    "HunyuanDiT1": "hunyuan-dit",
+    "Flux": "flux",
+    "FluxSchnell": "flux-schnell",
 }
 
 
