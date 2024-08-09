@@ -58,7 +58,8 @@ def inspect_checkpoint(filename):
                     cfg[key] = FakeTensor.from_dict(cfg[key])
 
             # Reuse Comfy's model detection
-            unet_args = [cfg, "model.diffusion_model.", "F32"]
+            prefix = model_detection.unet_prefix_from_state_dict(cfg)
+            unet_args = [cfg, prefix, "F32"]
             try:  # latest ComfyUI takes 2 args
                 unet_config = model_detection.detect_unet_config(*unet_args[:-1])
             except TypeError as e:  # older ComfyUI versions take 3 args
