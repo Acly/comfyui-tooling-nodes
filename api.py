@@ -2,6 +2,7 @@ from __future__ import annotations
 from aiohttp import web
 from typing import NamedTuple
 import json
+import traceback
 
 import comfy.utils
 from comfy import supported_models
@@ -44,10 +45,10 @@ class FakeTensor(NamedTuple):
             return d
 
 
-def inspect_checkpoint(filename):
+def inspect_diffusion_model(filename: str, prefix: str | None, model_type: str):
     try:
         # Read header of safetensors file
-        path = folder_paths.get_full_path("checkpoints", filename)
+        path = folder_paths.get_full_path(model_type, filename)
         header = comfy.utils.safetensors_header(path)
         if header:
             cfg = json.loads(header.decode("utf-8"))
@@ -58,12 +59,12 @@ def inspect_checkpoint(filename):
                     cfg[key] = FakeTensor.from_dict(cfg[key])
 
             # Reuse Comfy's model detection
-            prefix = model_detection.unet_prefix_from_state_dict(cfg)
-            unet_args = [cfg, prefix, "F32"]
+            if prefix is None:
+                prefix = model_detection.unet_prefix_from_state_dict(cfg)
             try:  # latest ComfyUI takes 2 args
-                unet_config = model_detection.detect_unet_config(*unet_args[:-1])
+                unet_config = model_detection.detect_unet_config(cfg, prefix)
             except TypeError as e:  # older ComfyUI versions take 3 args
-                unet_config = model_detection.detect_unet_config(*unet_args)
+                raise TypeError(f"{e} when calling detect_unet_config - old version of ComfyUI?")
 
             # Get input count to detect inpaint models
             if input_block := cfg.get(input_block_name, None):
@@ -85,25 +86,43 @@ def inspect_checkpoint(filename):
             }
         return {"base_model": "unknown"}
     except Exception as e:
+        traceback.print_exc()
         return {"base_model": "unknown", "error": f"Failed to detect base model: {e}"}
+
+
+def inspect_models(model_type: str):
+    try:
+        prefix = "" if model_type in ("unet", "diffusion_models") else None
+        info = {
+            filename: inspect_diffusion_model(filename, prefix, model_type)
+            for filename in folder_paths.get_filename_list(model_type)
+        }
+        return web.json_response(info)
+    except Exception as e:
+        traceback.print_exc()
+        return web.json_response(dict(error=str(e)), status=500)
 
 
 if _server := getattr(server.PromptServer, "instance", None):
 
-    @_server.routes.get("/etn/model_info")
-    async def model_info(request):
-        try:
-            info = {
-                filename: inspect_checkpoint(filename)
-                for filename in folder_paths.get_filename_list("checkpoints")
-            }
-            return web.json_response(info)
-        except Exception as e:
-            return web.json_response(dict(error=str(e)), status=500)
+    @_server.routes.get("/api/etn/model_info/{folder_name}")
+    async def model_info(request: web.Request):
+        folder_name = request.match_info.get("folder_name", "checkpoints")
+        valid_names = list(folder_paths.folder_names_and_paths.keys())
+        if folder_name not in valid_names:
+            return web.json_response(
+                dict(error=f"Invalid folder path, must be one of {', '.join(valid_names)}"),
+                status=400,
+            )
+        return inspect_models(folder_name)
 
     @_server.routes.get("/api/etn/model_info")
     async def api_model_info(request):
-        return await model_info(request)
+        return inspect_models("checkpoints")
+
+    @_server.routes.get("/etn/model_info")
+    async def api_model_info(request):
+        return inspect_models("checkpoints")
 
     @_server.routes.get("/api/etn/languages")
     async def languages(request):

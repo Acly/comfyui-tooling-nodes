@@ -157,26 +157,28 @@ Inputs: image and sensitivity (0.5 for explicit content only, 0.7+ to include pa
 
 ## <a id="api" href="#toc">API extensions</a>
 
-### /api/etn/model_info
+### /api/etn/model_info/{folder_name}
 
 There are various types of models that can be loaded as checkpoint, LoRA, ControlNet, etc. which cannot be used interchangeably. This endpoint helps to categorize and filter them.
 
-Lists available models with additional classification info.
-* Paramters: _none_
-* Output: list of model files
-    ```
-    {
-        "checkpoint_file.safetensors": {
-            "base_model": "sd15"|"sd20"|"sd21"|"sd3"|"sdxl"|"ssd1b"|"svd"|"cascade-b"|"cascade-c",
-            "is_inpaint": true|false,
-            "is_refiner": true|false
-        },
-        ...
-    }
-    ```
-    The entry is `{"base_model": "unknown"}` for models which are not in safetensors format or do not match any of the known base models.
+#### Paramters
+* `folder_name`: sub-directory in ComfyUI's models folder.
+  Supported model types: `checkpoints`, `diffusion_models`
 
-_Note: currently only supports checkpoints. May add other models in the future._
+#### Output
+Lists available models with additional classification info:
+```
+{
+    "checkpoint_file.safetensors": {
+        "base_model": "sd15"|"sd20"|"sd21"|"sd3"|"sdxl"|"ssd1b"|"svd"|"cascade-b"|"cascade-c",
+        "is_inpaint": true|false,
+        "is_refiner": true|false
+    },
+    ...
+}
+```
+The entry is `{"base_model": "unknown"}` for models which are not in safetensors format or do not match any of the known base models.
+
 
 <a id="api-translation"></a>
 ### /api/etn/translate/{lang}/{text}
