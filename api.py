@@ -1,12 +1,14 @@
 from __future__ import annotations
 from aiohttp import web
 from typing import NamedTuple
+from pathlib import Path
 import json
 import traceback
+import re
+import logging
 
+from comfy import model_detection, supported_models
 import comfy.utils
-from comfy import supported_models
-from comfy import model_detection
 import folder_paths
 import server
 
@@ -103,17 +105,36 @@ def inspect_models(model_type: str):
         return web.json_response(dict(error=str(e)), status=500)
 
 
-if _server := getattr(server.PromptServer, "instance", None):
+def has_invalid_folder_name(folder_name: str):
+    valid_names = list(folder_paths.folder_names_and_paths.keys())
+    if folder_name not in valid_names:
+        return web.json_response(
+            dict(error=f"Invalid folder path, must be one of {', '.join(valid_names)}"),
+            status=400,
+        )
+    return None
+
+
+def has_invalid_filename(filename: str):
+    if not filename.lower().endswith((".sft", ".safetensors")):
+        return web.json_response(dict(error="File extension must be .safetensors"), status=400)
+    if not filename or not filename.strip() or len(filename) > 255:
+        return web.json_response(dict(error="Invalid filename"), status=400)
+    if any(char in filename for char in ["..", "/", "\\", "\n", "\r", "\t", "\0"]):
+        return web.json_response(dict(error="Invalid filename"), status=400)
+    if filename.startswith(".") or not re.match(r"^[a-zA-Z0-9_\-. ]+$", filename):
+        return web.json_response(dict(error="Invalid filename"), status=400)
+    return None
+
+
+_server: server.PromptServer | None = getattr(server.PromptServer, "instance", None)
+if _server is not None:
 
     @_server.routes.get("/api/etn/model_info/{folder_name}")
     async def model_info(request: web.Request):
         folder_name = request.match_info.get("folder_name", "checkpoints")
-        valid_names = list(folder_paths.folder_names_and_paths.keys())
-        if folder_name not in valid_names:
-            return web.json_response(
-                dict(error=f"Invalid folder path, must be one of {', '.join(valid_names)}"),
-                status=400,
-            )
+        if error := has_invalid_folder_name(folder_name):
+            return error
         return inspect_models(folder_name)
 
     @_server.routes.get("/api/etn/model_info")
@@ -139,5 +160,31 @@ if _server := getattr(server.PromptServer, "instance", None):
             text = request.match_info.get("text", "")
             result = translate(f"lang:{language} {text}")
             return web.json_response(result)
+        except Exception as e:
+            return web.json_response(dict(error=str(e)), status=500)
+
+    @_server.routes.put("/api/etn/upload/{folder_name}/{filename}")
+    async def upload(request: web.Request):
+        folder_name = request.match_info.get("folder_name", "")
+        if error := has_invalid_folder_name(folder_name):
+            return error
+
+        filename = request.match_info.get("filename", "")
+        if error := has_invalid_filename(filename):
+            return error
+
+        try:
+            if folder_paths.get_full_path(folder_name, filename) is not None:
+                return web.json_response(dict(status="cached"), status=200)
+
+            folder = Path(folder_paths.folder_names_and_paths[folder_name][0][0])
+            total_size = int(request.headers.get("Content-Length", "0"))
+            logging.info(f"Uploading {filename} ({total_size/(1024**2):.1f} MB) to {folder} folder")
+
+            with open(folder / filename, "wb") as f:
+                async for chunk, _ in request.content.iter_chunks():
+                    f.write(chunk)
+
+            return web.json_response(dict(status="success"), status=201)
         except Exception as e:
             return web.json_response(dict(error=str(e)), status=500)
