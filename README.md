@@ -157,7 +157,7 @@ Inputs: image and sensitivity (0.5 for explicit content only, 0.7+ to include pa
 
 ## <a id="api" href="#toc">API extensions</a>
 
-### /api/etn/model_info/{folder_name}
+### GET /api/etn/model_info/{folder_name}
 
 There are various types of models that can be loaded as checkpoint, LoRA, ControlNet, etc. which cannot be used interchangeably. This endpoint helps to categorize and filter them.
 
@@ -167,7 +167,7 @@ There are various types of models that can be loaded as checkpoint, LoRA, Contro
 
 #### Output
 Lists available models with additional classification info:
-```
+```json
 {
     "checkpoint_file.safetensors": {
         "base_model": "sd15"|"sd20"|"sd21"|"sd3"|"sdxl"|"ssd1b"|"svd"|"cascade-b"|"cascade-c",
@@ -179,9 +179,18 @@ Lists available models with additional classification info:
 ```
 The entry is `{"base_model": "unknown"}` for models which are not in safetensors format or do not match any of the known base models.
 
+### GET /api/etn/languages
+
+Returns a list of available languages for translation.
+```json
+[
+    { "name": "English", "code": "en" },
+    { ... }
+]
+```
 
 <a id="api-translation"></a>
-### /api/etn/translate/{lang}/{text}
+### GET /api/etn/translate/{lang}/{text}
 
 Translates `text` into English. `lang` is a 2-letter code indicating the language to translate
 from. `text` may also contain _language directives_ to only translate some fragments.
@@ -189,6 +198,20 @@ See the [node documentation](#node-translate) for details.
 
 * Output: JSON string
 * Example: `/api/etn/translate/de/eine%20modische%20Handtasche` -> `"a fashionable handbag"`
+
+### PUT /api/etn/upload/{folder_name}/{filename}
+
+Uploads a model to ComfyUI's local model folder.
+
+#### Parameters
+* `folder_name`: the model type. Must match one of the existing folders in ComfyUI's models folder.
+* `filename`: target filename for the model. Must not contain any (absolute or relative) path. Extension must be .safetensors.
+
+#### Output
+* Code `201` and `{ "status": "success" }` after successful upload.
+* Code `200` and `{ "status": "cached" }` if the file already exists.
+* Code `400` and `{ "error": "..." }` if the parameters are invalid.
+
 
 ## <a id="installation" href="#toc">Installation</a>
 
