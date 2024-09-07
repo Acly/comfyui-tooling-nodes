@@ -50,19 +50,23 @@ class LoadMaskBase64:
         if img.dim() == 3:  # RGB(A) input, use red channel
             img = img[:, :, 0]
         return (img.unsqueeze(0),)
-
-
+    
 class SendImageWebSocket:
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": {"images": ("IMAGE",)}}
+        return {
+            "required": {
+                "images": ("IMAGE",),
+                "format": (["PNG", "JPEG"], {"default": "PNG"}),
+            }
+        }
 
     RETURN_TYPES = ()
     FUNCTION = "send_images"
     OUTPUT_NODE = True
     CATEGORY = "external_tooling"
 
-    def send_images(self, images):
+    def send_images(self, images, format):
         results = []
         for tensor in images:
             array = 255.0 * tensor.cpu().numpy()
@@ -71,16 +75,14 @@ class SendImageWebSocket:
             server = PromptServer.instance
             server.send_sync(
                 BinaryEventTypes.UNENCODED_PREVIEW_IMAGE,
-                ["PNG", image, None],
+                [format, image, None],
                 server.client_id,
             )
             results.append(
-                # Could put some kind of ID here, but for now just match them by index
-                {"source": "websocket", "content-type": "image/png", "type": "output"}
+                {"source": "websocket", "content-type": f"image/{format.lower()}", "type": "output"}
             )
 
         return {"ui": {"images": results}}
-
 
 class CropImage:
     """Deprecated, ComfyUI has an ImageCrop node now which does the same."""
