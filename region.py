@@ -150,9 +150,9 @@ class AttentionMask:
             assert k.mean() == v.mean(), "k and v must be the same."
             device, dtype = q.device, q.dtype
 
-            if self.conds[0].device != device:
+            if self.conds[0].device != device or self.conds[0].dtype != dtype:
                 self.conds = [cond.to(device, dtype=dtype) for cond in self.conds]
-            if self.mask.device != device:
+            if self.mask.device != device or self.mask.dtype != dtype:
                 self.mask = self.mask.to(device, dtype=dtype)
 
             cond_or_unconds = extra_options["cond_or_uncond"]
