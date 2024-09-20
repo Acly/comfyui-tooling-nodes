@@ -170,13 +170,15 @@ Lists available models with additional classification info:
 ```json
 {
     "checkpoint_file.safetensors": {
-        "base_model": "sd15"|"sd20"|"sd21"|"sd3"|"sdxl"|"ssd1b"|"svd"|"cascade-b"|"cascade-c",
-        "is_inpaint": true|false,
-        "is_refiner": true|false
+        "base_model": "sd15",
+        "is_inpaint": false,
+        "is_refiner": false
     },
     ...
 }
 ```
+Possible values for base model: `sd15, sd20, sd21, sd3, sdxl, ssd1b, svd, cascade-b, cascade-c, aura-flow, hunyuan-dit, flux, flux-schnell`
+
 The entry is `{"base_model": "unknown"}` for models which are not in safetensors format or do not match any of the known base models.
 
 ### GET /api/etn/languages

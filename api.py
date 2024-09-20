@@ -88,7 +88,7 @@ def inspect_diffusion_model(filename: str, prefix: str | None, model_type: str):
             }
         return {"base_model": "unknown"}
     except Exception as e:
-        traceback.print_exc()
+        # traceback.print_exc()
         return {"base_model": "unknown", "error": f"Failed to detect base model: {e}"}
 
 
