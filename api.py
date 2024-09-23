@@ -127,8 +127,45 @@ def has_invalid_filename(filename: str):
     return None
 
 
+class Publisher(NamedTuple):
+    name: str
+    id: str
+    workflow: dict
+
+
+class WorkflowExchange:
+    def __init__(self, server: server.PromptServer):
+        self._server = server
+        self._publishers: dict[str, Publisher] = {}
+        self._subscribers: list[str] = []
+
+    async def publish(self, publisher_name: str, publisher_id: str, workflow: dict):
+        name = f"{publisher_name} ({publisher_id})"
+        publisher = Publisher(name, publisher_id, workflow)
+        for client_id in self._subscribers:
+            await self._notify(client_id, publisher)
+        self._publishers[publisher_id] = publisher
+        print(f"Published workflow from {name}: {workflow}")
+
+    async def subscribe(self, client_id: str):
+        if client_id in self._subscribers:
+            raise KeyError("Already subscribed")
+        self._subscribers.append(client_id)
+        for publisher in self._publishers.values():
+            await self._notify(client_id, publisher)
+
+    def unsubscribe(self, client_id: str):
+        self._subscribers.remove(client_id)
+
+    async def _notify(self, client_id: str, publisher: Publisher):
+        data = {"publisher": publisher.name, "workflow": publisher.workflow}
+        await self._server.send_json("etn_workflow_changed", data, client_id)
+
+
 _server: server.PromptServer | None = getattr(server.PromptServer, "instance", None)
 if _server is not None:
+
+    _workflow_exchange = WorkflowExchange(_server)
 
     @_server.routes.get("/api/etn/model_info/{folder_name}")
     async def model_info(request: web.Request):
@@ -188,3 +225,28 @@ if _server is not None:
             return web.json_response(dict(status="success"), status=201)
         except Exception as e:
             return web.json_response(dict(error=str(e)), status=500)
+
+    async def _handle_workflow_request(request: web.Request, handler, *arg_keys):
+        try:
+            data = await request.json()
+            args = [data[key] for key in arg_keys]
+            await handler(*args)
+            return web.json_response(dict(status="success"), status=200)
+        except KeyError as e:
+            return web.json_response(dict(error=str(e)), status=400)
+        except Exception as e:
+            return web.json_response(dict(error=str(e)), status=500)
+
+    @_server.routes.post("/api/etn/workflow/publish")
+    async def publish_workflow(request: web.Request):
+        return await _handle_workflow_request(
+            request, _workflow_exchange.publish, "name", "client_id", "workflow"
+        )
+
+    @_server.routes.post("/api/etn/workflow/subscribe")
+    async def subscribe_workflow(request: web.Request):
+        return await _handle_workflow_request(request, _workflow_exchange.subscribe, "client_id")
+
+    @_server.routes.post("/api/etn/workflow/unsubscribe")
+    async def unsubscribe_workflow(request: web.Request):
+        return await _handle_workflow_request(request, _workflow_exchange.unsubscribe, "client_id")

@@ -36,3 +36,4 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ETN_NSFWFilter": "NSFW Filter",
     "ETN_Translate": "Translate Text",
 }
+WEB_DIRECTORY = "./js"
