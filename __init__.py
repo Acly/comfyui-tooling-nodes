@@ -1,4 +1,4 @@
-from . import api, nodes, tile, region, nsfw, translation
+from . import api, nodes, tile, region, nsfw, translation, krita
 
 NODE_CLASS_MAPPINGS = {
     "ETN_LoadImageBase64": nodes.LoadImageBase64,
@@ -17,6 +17,12 @@ NODE_CLASS_MAPPINGS = {
     "ETN_AttentionMask": region.AttentionMask,
     "ETN_NSFWFilter": nsfw.NSFWFilter,
     "ETN_Translate": translation.Translate,
+    "ETN_KritaOutput": krita.KritaOutput,
+    "ETN_KritaCanvas": krita.KritaCanvas,
+    "ETN_KritaSelection": krita.KritaSelection,
+    "ETN_KritaImageLayer": krita.KritaImageLayer,
+    "ETN_KritaMaskLayer": krita.KritaMaskLayer,
+    "ETN_IntParameter": krita.IntParameter,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "ETN_LoadImageBase64": "Load Image (Base64)",
@@ -35,5 +41,11 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ETN_AttentionMask": "Regions Attention Mask",
     "ETN_NSFWFilter": "NSFW Filter",
     "ETN_Translate": "Translate Text",
+    "ETN_KritaOutput": "Krita Output",
+    "ETN_KritaCanvas": "Krita Canvas",
+    "ETN_KritaSelection": "Krita Selection",
+    "ETN_KritaImageLayer": "Krita Image Layer",
+    "ETN_KritaMaskLayer": "Krita Mask Layer",
+    "ETN_IntParameter": "Integer Parameter",
 }
 WEB_DIRECTORY = "./js"

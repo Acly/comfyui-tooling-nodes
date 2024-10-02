@@ -13,6 +13,7 @@ import folder_paths
 import server
 
 from .translation import available_languages, translate
+from .krita import WorkflowExchange
 
 input_block_name = "model.diffusion_model.input_blocks.0.0.weight"
 
@@ -125,41 +126,6 @@ def has_invalid_filename(filename: str):
     if filename.startswith(".") or not re.match(r"^[a-zA-Z0-9_\-. ]+$", filename):
         return web.json_response(dict(error="Invalid filename"), status=400)
     return None
-
-
-class Publisher(NamedTuple):
-    name: str
-    id: str
-    workflow: dict
-
-
-class WorkflowExchange:
-    def __init__(self, server: server.PromptServer):
-        self._server = server
-        self._publishers: dict[str, Publisher] = {}
-        self._subscribers: list[str] = []
-
-    async def publish(self, publisher_name: str, publisher_id: str, workflow: dict):
-        name = f"{publisher_name} ({publisher_id})"
-        publisher = Publisher(name, publisher_id, workflow)
-        for client_id in self._subscribers:
-            await self._notify(client_id, publisher)
-        self._publishers[publisher_id] = publisher
-        print(f"Published workflow from {name}: {workflow}")
-
-    async def subscribe(self, client_id: str):
-        if client_id in self._subscribers:
-            raise KeyError("Already subscribed")
-        self._subscribers.append(client_id)
-        for publisher in self._publishers.values():
-            await self._notify(client_id, publisher)
-
-    def unsubscribe(self, client_id: str):
-        self._subscribers.remove(client_id)
-
-    async def _notify(self, client_id: str, publisher: Publisher):
-        data = {"publisher": publisher.name, "workflow": publisher.workflow}
-        await self._server.send_json("etn_workflow_changed", data, client_id)
 
 
 _server: server.PromptServer | None = getattr(server.PromptServer, "instance", None)
