@@ -1,5 +1,8 @@
 import torch
+import numpy as np
+from pathlib import Path
 from typing import NamedTuple
+from PIL import Image
 
 import server
 from .nodes import SendImageWebSocket
@@ -41,6 +44,13 @@ class WorkflowExchange:
         await self._server.send_json("etn_workflow_published", data, client_id)
 
 
+def _placeholder_image():
+    path = Path(__file__).parent / "data" / "external-image-placeholder.webp"
+    image = Image.open(path).convert("RGB")
+    image = np.array(image).astype(np.float32) / 255.0
+    return torch.from_numpy(image)[None,]
+
+
 class KritaOutput(SendImageWebSocket):
     RETURN_TYPES = ()
     FUNCTION = "send_images"
@@ -59,8 +69,7 @@ class KritaCanvas:
     CATEGORY = "krita"
 
     def placeholder(self):
-        empty = torch.zeroes(1, 512, 512, 3)
-        return (empty, 512, 512, 0)
+        return (_placeholder_image(), 512, 512, 0)
 
 
 class KritaSelection:
@@ -74,8 +83,7 @@ class KritaSelection:
     CATEGORY = "krita"
 
     def placeholder(self):
-        empty = torch.ones(1, 512, 512)
-        return (empty,)
+        return (torch.ones(1, 512, 512),)
 
 
 class KritaImageLayer:
@@ -93,8 +101,7 @@ class KritaImageLayer:
     CATEGORY = "krita"
 
     def placeholder(self, name: str):
-        empty = torch.zeros(1, 512, 512, 3)
-        return (empty,)
+        return (_placeholder_image(),)
 
 
 class KritaMaskLayer:
@@ -112,8 +119,7 @@ class KritaMaskLayer:
     CATEGORY = "krita"
 
     def placeholder(self, name: str):
-        empty = torch.ones(1, 512, 512)
-        return (empty,)
+        return (torch.ones(1, 512, 512),)
 
 
 class IntParameter:
