@@ -22,10 +22,7 @@ NODE_CLASS_MAPPINGS = {
     "ETN_KritaSelection": krita.KritaSelection,
     "ETN_KritaImageLayer": krita.KritaImageLayer,
     "ETN_KritaMaskLayer": krita.KritaMaskLayer,
-    "ETN_IntParameter": krita.IntParameter,
-    "ETN_BoolParameter": krita.BoolParameter,
-    "ETN_NumberParameter": krita.NumberParameter,
-    "ETN_TextParameter": krita.TextParameter,
+    "ETN_Parameter": krita.Parameter,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "ETN_LoadImageBase64": "Load Image (Base64)",
@@ -49,9 +46,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ETN_KritaSelection": "Krita Selection",
     "ETN_KritaImageLayer": "Krita Image Layer",
     "ETN_KritaMaskLayer": "Krita Mask Layer",
-    "ETN_IntParameter": "Integer Parameter",
-    "ETN_BoolParameter": "Boolean Parameter",
-    "ETN_NumberParameter": "Number Parameter",
-    "ETN_TextParameter": "Text Parameter",
+    "ETN_Parameter": "Parameter",
 }
 WEB_DIRECTORY = "./js"

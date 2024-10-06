@@ -122,85 +122,35 @@ class KritaMaskLayer:
         return (torch.ones(1, 512, 512),)
 
 
-class IntParameter:
+_param_types = [
+    "auto",
+    "number",
+    "number (integer)",
+    "toggle",
+    "choice",
+    "text",
+    "prompt (positive)",
+    "prompt (negative)",
+]
+
+
+class Parameter:
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
                 "name": ("STRING", {"default": "Parameter"}),
-                "min": ("INT", {"default": 0}),
-                "max": ("INT", {"default": 100}),
-                "default": ("INT", {"default": 0}),
-            }
-        }
-
-    RETURN_TYPES = ("INT",)
-    RETURN_NAMES = ("value",)
-    FUNCTION = "placeholder"
-    CATEGORY = "krita"
-
-    def placeholder(self, name: str, min: int, max: int, default: int):
-        return (default,)
-
-
-class BoolParameter:
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "name": ("STRING", {"default": "Parameter"}),
-                "default": ("BOOLEAN", {"default": False}),
-            }
-        }
-
-    RETURN_TYPES = ("BOOL",)
-    RETURN_NAMES = ("value",)
-    FUNCTION = "placeholder"
-    CATEGORY = "krita"
-
-    def placeholder(self, name: str, default: bool):
-        return (default,)
-
-
-class NumberParameter:
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "name": ("STRING", {"default": "Parameter"}),
+                "type": (_param_types, {"default": "auto"}),
+                "default": ("STRING", {"default": ""}),
                 "min": ("FLOAT", {"default": 0.0}),
                 "max": ("FLOAT", {"default": 1.0}),
-                "default": ("FLOAT", {"default": 0.0}),
             }
         }
 
-    RETURN_TYPES = ("FLOAT",)
+    RETURN_TYPES = ("*",)
     RETURN_NAMES = ("value",)
     FUNCTION = "placeholder"
     CATEGORY = "krita"
 
-    def placeholder(self, name: str, min: float, max: float, default: float):
-        return (default,)
-
-
-class TextParameter:
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "name": ("STRING", {"default": "Parameter"}),
-                "type": (
-                    ["general", "prompt (positive)", "prompt (negative)"],
-                    {"default": "general"},
-                ),
-                "default": ("STRING", {"default": ""}),
-            }
-        }
-
-    RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("value",)
-    FUNCTION = "placeholder"
-    CATEGORY = "krita"
-
-    def placeholder(self, name: str, style: str, default: str):
+    def placeholder(self, name: str, type: str, default, min, max):
         return (default,)
