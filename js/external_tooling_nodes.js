@@ -146,7 +146,6 @@ function setupParameterNode(nodeType) {
             return false
         } else if (onConnectOutput) {
             result = onConnectOutput.apply(this, arguments)
-            console.log("onConnectOutput", result)
             return result
         }
         return true

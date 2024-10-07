@@ -5,6 +5,7 @@ from typing import NamedTuple
 from PIL import Image
 
 import server
+import comfy.samplers
 from .nodes import SendImageWebSocket
 
 
@@ -154,3 +155,42 @@ class Parameter:
 
     def placeholder(self, name: str, type: str, default, min, max):
         return (default,)
+
+
+class KritaStyle:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "name": ("STRING", {"default": "Style"}),
+                "sampler_preset": (["auto", "regular", "live"],),
+            }
+        }
+
+    RETURN_TYPES = (
+        "MODEL",
+        "CLIP",
+        "VAE",
+        "STRING",
+        "STRING",
+        comfy.samplers.KSampler.SAMPLERS,
+        comfy.samplers.KSampler.SCHEDULERS,
+        "INT",
+        "FLOAT",
+    )
+    RETURN_NAMES = (
+        "model",
+        "clip",
+        "vae",
+        "positive prompt",
+        "negative prompt",
+        "sampler name",
+        "scheduler",
+        "steps",
+        "guidance",
+    )
+    FUNCTION = "placeholder"
+    CATEGORY = "krita"
+
+    def placeholder(self, name: str, sampler_preset: str):
+        raise NotImplementedError("This workflow must be started from Krita!")

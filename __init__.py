@@ -23,6 +23,7 @@ NODE_CLASS_MAPPINGS = {
     "ETN_KritaImageLayer": krita.KritaImageLayer,
     "ETN_KritaMaskLayer": krita.KritaMaskLayer,
     "ETN_Parameter": krita.Parameter,
+    "ETN_KritaStyle": krita.KritaStyle,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "ETN_LoadImageBase64": "Load Image (Base64)",
@@ -47,5 +48,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ETN_KritaImageLayer": "Krita Image Layer",
     "ETN_KritaMaskLayer": "Krita Mask Layer",
     "ETN_Parameter": "Parameter",
+    "ETN_KritaStyle": "Krita Style",
 }
 WEB_DIRECTORY = "./js"
