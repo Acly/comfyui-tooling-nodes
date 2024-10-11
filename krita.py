@@ -123,6 +123,17 @@ class KritaMaskLayer:
         return (torch.ones(1, 512, 512),)
 
 
+class _BasicTypes:
+    basic_types = ["INT", "FLOAT", "STRING", "BOOL"]
+
+    def __eq__(self, other):
+        return other in self.basic_types or isinstance(other, (list, _BasicTypes))
+
+    def __str__(self):
+        return "BASIC"
+
+
+BasicTypes = _BasicTypes()
 _param_types = [
     "auto",
     "number",
@@ -148,7 +159,7 @@ class Parameter:
             }
         }
 
-    RETURN_TYPES = ("*",)
+    RETURN_TYPES = (BasicTypes,)
     RETURN_NAMES = ("value",)
     FUNCTION = "placeholder"
     CATEGORY = "krita"
