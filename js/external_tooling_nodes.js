@@ -72,20 +72,32 @@ const parameterTypes = {
     "text": ["text", "prompt (positive)", "prompt (negative)"],
 }
 
+function defaultParameterType(widgetType, connectedNode, connectedWidget) {
+    let paramType = parameterTypes[widgetType][0]
+    if (connectedNode.comfyClass === "CLIPTextEncode") {
+        paramType = "prompt (positive)"
+    }
+    if (connectedWidget.options?.round === 1) {
+        paramType = "number (integer)"
+    }
+    return paramType
+}
+
 function changeWidget(widget, type, value, options) {
     widget.type = type
     widget.value = value
     widget.options = options
 }
 
-function changeWidgets(node, type, value, options) {
+function changeWidgets(node, type, connectedNode, connectedWidget) {
     if (type === "customtext") {
         type = "text"
     }
+    const options = connectedWidget.options
 
-    node.widgets[1].value = parameterTypes[type][0]
+    node.widgets[1].value = defaultParameterType(type, connectedNode, connectedWidget)
     node.widgets[1].options = {values: parameterTypes[type]}
-    changeWidget(node.widgets[2], type, value, options)
+    changeWidget(node.widgets[2], type, connectedWidget.value, options)
 
     if (type === "number") {
         changeWidget(node.widgets[3], "number", options?.min ?? 0, options)
@@ -120,7 +132,7 @@ function adaptWidgetsToConnection(node) {
         const widgetName = input.widget.name
         const theirWidget = theirNode.widgets.find((w) => w.name === widgetName)
         const widgetType = theirWidget.origType ?? theirWidget.type
-        changeWidgets(node, widgetType, theirWidget.value, theirWidget.options)
+        changeWidgets(node, widgetType, theirNode, theirWidget)
 
     } else if (links.length === 0) {
         node.outputs[0].type = "*"
