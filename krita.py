@@ -123,7 +123,7 @@ class KritaMaskLayer:
         return (torch.ones(1, 512, 512),)
 
 
-class _BasicTypes:
+class _BasicTypes(str):
     basic_types = ["INT", "FLOAT", "STRING", "BOOL"]
 
     def __eq__(self, other):
