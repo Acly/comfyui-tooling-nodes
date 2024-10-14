@@ -34,8 +34,11 @@ class WorkflowExchange:
         for publisher in self._publishers.values():
             await self._notify(client_id, publisher)
 
-    def unsubscribe(self, client_id: str):
-        self._subscribers.remove(client_id)
+    async def unsubscribe(self, client_id: str):
+        if client_id in self._subscribers:
+            self._subscribers.remove(client_id)
+        else:
+            raise KeyError("No subscriber found with id " + client_id)
 
     async def _notify(self, client_id: str, publisher: Publisher):
         data = {
