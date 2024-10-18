@@ -95,14 +95,17 @@ function changeWidgets(node, type, connectedNode, connectedWidget) {
     }
     const options = connectedWidget.options
 
-    node.widgets[1].value = defaultParameterType(type, connectedNode, connectedWidget)
-    node.widgets[1].options = {values: parameterTypes[type]}
-    changeWidget(node.widgets[2], type, connectedWidget.value, options)
-
-    if (type === "number") {
+    if (!parameterTypes[type].includes(node.widgets[1].value)) {
+        node.widgets[1].value = defaultParameterType(type, connectedNode, connectedWidget)
+        node.widgets[1].options = {values: parameterTypes[type]}
+    }
+    if (node.widgets[2].type !== type) {
+        changeWidget(node.widgets[2], type, connectedWidget.value, options)
+    }
+    if (type === "number" && node.widgets[3].value === 0 && node.widgets[4].value === 0) {
         changeWidget(node.widgets[3], "number", options?.min ?? 0, options)
         changeWidget(node.widgets[4], "number", options?.max ?? 100, options)
-    } else {
+    } else if (type !== "number") {
         changeWidget(node.widgets[3], "number", 0, {min: 0, max: 0})
         changeWidget(node.widgets[4], "number", 0, {min: 0, max: 0})
     }

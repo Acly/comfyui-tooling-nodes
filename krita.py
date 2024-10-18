@@ -158,7 +158,7 @@ class Parameter:
                 "type": (_param_types, {"default": "auto"}),
                 "default": ("STRING", {"default": ""}),
                 "min": ("FLOAT", {"default": 0.0}),
-                "max": ("FLOAT", {"default": 1.0}),
+                "max": ("FLOAT", {"default": 0.0}),
             }
         }
 
