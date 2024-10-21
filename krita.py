@@ -132,6 +132,9 @@ class _BasicTypes(str):
     def __eq__(self, other):
         return other in self.basic_types or isinstance(other, (list, _BasicTypes))
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def __str__(self):
         return "BASIC"
 
