@@ -48,7 +48,7 @@ class FakeTensor(NamedTuple):
             return d
 
 
-def inspect_diffusion_model(filename: str, prefix: str | None, model_type: str):
+def inspect_diffusion_model(filename: str, model_type: str, is_checkpoint: bool):
     try:
         # Read header of safetensors file
         path = folder_paths.get_full_path(model_type, filename)
@@ -62,8 +62,12 @@ def inspect_diffusion_model(filename: str, prefix: str | None, model_type: str):
                     cfg[key] = FakeTensor.from_dict(cfg[key])
 
             # Reuse Comfy's model detection
-            if prefix is None:
-                prefix = model_detection.unet_prefix_from_state_dict(cfg)
+            prefix = model_detection.unet_prefix_from_state_dict(cfg)
+            if not is_checkpoint:
+                temp_sd = comfy.utils.state_dict_prefix_replace(cfg, {prefix: ""}, filter_keys=True)
+                if len(temp_sd) > 0:
+                    cfg = temp_sd
+                prefix = ""
             try:  # latest ComfyUI takes 2 args
                 unet_config = model_detection.detect_unet_config(cfg, prefix)
             except TypeError as e:  # older ComfyUI versions take 3 args
@@ -95,9 +99,9 @@ def inspect_diffusion_model(filename: str, prefix: str | None, model_type: str):
 
 def inspect_models(model_type: str):
     try:
-        prefix = "" if model_type in ("unet", "diffusion_models") else None
+        is_checkpoint = model_type == "checkpoints"
         info = {
-            filename: inspect_diffusion_model(filename, prefix, model_type)
+            filename: inspect_diffusion_model(filename, model_type, is_checkpoint)
             for filename in folder_paths.get_filename_list(model_type)
         }
         return web.json_response(info)
