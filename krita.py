@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 from pathlib import Path
-from typing import NamedTuple
+from typing import Any, NamedTuple
 from PIL import Image
 
 import server
@@ -55,11 +55,63 @@ def _placeholder_image():
     return torch.from_numpy(image)[None,]
 
 
+class _AnyType(str):
+    def __ne__(self, other):
+        return False
+
+
+class _BasicTypes(str):
+    basic_types = ["INT", "FLOAT", "STRING", "BOOL"]
+
+    def __eq__(self, other):
+        return other in self.basic_types or isinstance(other, (list, _BasicTypes))
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+AnyType = _AnyType("*")
+BasicTypes = _BasicTypes("BASIC")
+
+
 class KritaOutput(SendImageWebSocket):
     RETURN_TYPES = ()
     FUNCTION = "send_images"
     OUTPUT_NODE = True
     CATEGORY = "krita"
+
+
+class KritaSendText:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "value": (AnyType, {}),
+                "name": ("STRING", {"default": "Output"}),
+                "type": (["text", "markdown", "html"], {"default": "text"}),
+            }
+        }
+
+    RETURN_TYPES = ()
+    FUNCTION = "send"
+    OUTPUT_NODE = True
+    CATEGORY = "krita"
+
+    def send(self, value: Any, name: str, type: str):
+        mime = {
+            "text": "text/plain",
+            "markdown": "text/markdown",
+            "html": "text/html",
+        }[type]
+        text = "None"
+        if value is not None:
+            try:
+                text = str(value)
+            except Exception as e:
+                text = f"Could not convert to text: {e}"
+
+        print(f"Sending text: {name} = {text}")
+        return {"ui": {"text": [{"name": name, "text": text, "content-type": mime}]}}
 
 
 class KritaCanvas:
@@ -126,20 +178,6 @@ class KritaMaskLayer:
         return (torch.ones(1, 512, 512),)
 
 
-class _BasicTypes(str):
-    basic_types = ["INT", "FLOAT", "STRING", "BOOL"]
-
-    def __eq__(self, other):
-        return other in self.basic_types or isinstance(other, (list, _BasicTypes))
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __str__(self):
-        return "BASIC"
-
-
-BasicTypes = _BasicTypes()
 _param_types = [
     "auto",
     "number",

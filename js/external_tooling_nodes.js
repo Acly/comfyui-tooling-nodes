@@ -186,8 +186,14 @@ app.registerExtension({
             setIconImage(nodeType, canvasIcon, [200, 100], 0, 2)
         } else if (nodeData.name === "ETN_KritaOutput") {
             setIconImage(nodeType, outputIcon, [200, 120], 2, 0)
-        } else if (nodeData.name == "ETN_Parameter") {
+        } else if (nodeData.name === "ETN_Parameter") {
             setupParameterNode(nodeType)
+        } else if (nodeData.name === "ETN_SendText") {
+            const onAdded = nodeType.prototype.onAdded
+            nodeType.prototype.onAdded = function() {
+                onAdded?.apply(this, arguments)
+                this.inputs[0].type = "*"
+            }
         }
     },
 
