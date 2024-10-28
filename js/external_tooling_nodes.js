@@ -112,11 +112,11 @@ function changeWidgets(node, type, connectedNode, connectedWidget) {
 }
 
 function adaptWidgetsToConnection(node) {
-    if (!node.outputs || node.outputs.length === 0 || !node.outputs[0].links) {
+    if (!node.outputs || node.outputs.length === 0) {
         return
     }
     const links = node.outputs[0].links
-    if (links.length === 1) {
+    if (links && links.length === 1) {
         const link = node.graph.links[links[0]]
         if (!link) return
 
@@ -137,7 +137,7 @@ function adaptWidgetsToConnection(node) {
         const widgetType = theirWidget.origType ?? theirWidget.type
         changeWidgets(node, widgetType, theirNode, theirWidget)
 
-    } else if (links.length === 0) {
+    } else if (!links || links.length === 0) {
         node.outputs[0].type = "*"
     }
 }
