@@ -68,10 +68,12 @@ class _BasicTypes(str):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+    def __str__(self):
+        return "BASIC"
 
 
 AnyType = _AnyType("*")
-BasicTypes = _BasicTypes("BASIC")
+BasicTypes = _BasicTypes()
 
 
 class KritaOutput(SendImageWebSocket):
