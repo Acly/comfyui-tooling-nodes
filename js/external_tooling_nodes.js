@@ -185,7 +185,7 @@ app.registerExtension({
         if (nodeData.name === "ETN_KritaCanvas") {
             setIconImage(nodeType, canvasIcon, [200, 100], 0, 2)
         } else if (nodeData.name === "ETN_KritaOutput") {
-            setIconImage(nodeType, outputIcon, [200, 120], 2, 0)
+            setIconImage(nodeType, outputIcon, [200, 100], 1, 0)
         } else if (nodeData.name === "ETN_Parameter") {
             setupParameterNode(nodeType)
         } else if (nodeData.name === "ETN_SendText") {

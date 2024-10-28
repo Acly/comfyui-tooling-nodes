@@ -74,11 +74,18 @@ AnyType = _AnyType("*")
 BasicTypes = _BasicTypes("BASIC")
 
 
-class KritaOutput(SendImageWebSocket):
+class KritaOutput:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {"images": ("IMAGE",)}}
+
     RETURN_TYPES = ()
     FUNCTION = "send_images"
     OUTPUT_NODE = True
     CATEGORY = "krita"
+
+    def send_images(self, images):
+        return SendImageWebSocket().send_images(images, "PNG")
 
 
 class KritaSendText:
