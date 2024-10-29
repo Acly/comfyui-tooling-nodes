@@ -83,6 +83,17 @@ function defaultParameterType(widgetType, connectedNode, connectedWidget) {
     return paramType
 }
 
+function valueMatchesType(value, type, options) {
+    if (type === "number") {
+        return typeof value === "number"
+    } else if (type === "combo") {
+        return options?.values?.includes(value)
+    } else if (type === "toggle") {
+        return typeof value === "boolean"
+    }
+    return typeof value === "string"
+}
+
 function changeWidget(widget, type, value, options) {
     widget.type = type
     widget.value = value
@@ -99,8 +110,11 @@ function changeWidgets(node, type, connectedNode, connectedWidget) {
         node.widgets[1].value = defaultParameterType(type, connectedNode, connectedWidget)
         node.widgets[1].options = {values: parameterTypes[type]}
     }
-    if (node.widgets[2].type !== type) {
-        changeWidget(node.widgets[2], type, connectedWidget.value, options)
+    const oldDefault = node.widgets[2].value
+    const isDefaultValid = valueMatchesType(oldDefault, type, connectedWidget.options)
+    if (node.widgets[2].type !== type || !isDefaultValid) {
+        const value = isDefaultValid && oldDefault !== "" ? oldDefault : connectedWidget.value
+        changeWidget(node.widgets[2], type, value, options)
     }
     if (type === "number" && node.widgets[3].value === 0 && node.widgets[4].value === 0) {
         changeWidget(node.widgets[3], "number", options?.min ?? 0, options)
