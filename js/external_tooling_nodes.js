@@ -106,7 +106,9 @@ function changeWidgets(node, type, connectedNode, connectedWidget) {
     }
     const options = connectedWidget.options
 
-    if (!parameterTypes[type].includes(node.widgets[1].value)) {
+    const parameterTypeHint = node.widgets[1].value
+    const notSpecialized = node.widgets[1].options.values.includes("auto")
+    if (notSpecialized || !parameterTypes[type].includes(parameterTypeHint)) {
         node.widgets[1].value = defaultParameterType(type, connectedNode, connectedWidget)
         node.widgets[1].options = {values: parameterTypes[type]}
     }
@@ -153,6 +155,8 @@ function adaptWidgetsToConnection(node) {
 
     } else if (!links || links.length === 0) {
         node.outputs[0].type = "*"
+        node.widgets[1].value = "auto"
+        node.widgets[1].options = {values: ["auto"]}
     }
 }
 
