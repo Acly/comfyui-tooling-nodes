@@ -1,3 +1,4 @@
+import sys
 import torch
 import numpy as np
 from pathlib import Path
@@ -195,6 +196,7 @@ _param_types = [
     "prompt (positive)",
     "prompt (negative)",
 ]
+_any_float = {"default": 0.0, "min": -sys.float_info.max, "max": sys.float_info.max}
 
 
 class Parameter:
@@ -205,8 +207,8 @@ class Parameter:
                 "name": ("STRING", {"default": "Parameter"}),
                 "type": (_param_types, {"default": "auto"}),
                 "default": ("STRING", {"default": ""}),
-                "min": ("FLOAT", {"default": 0.0}),
-                "max": ("FLOAT", {"default": 0.0}),
+                "min": ("FLOAT", _any_float),
+                "max": ("FLOAT", _any_float),
             }
         }
 
