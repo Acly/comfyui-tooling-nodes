@@ -108,9 +108,12 @@ function changeWidgets(node, type, connectedNode, connectedWidget) {
 
     const parameterTypeHint = node.widgets[1].value
     const notSpecialized = node.widgets[1].options.values.includes("auto")
-    if (notSpecialized || !parameterTypes[type].includes(parameterTypeHint)) {
-        node.widgets[1].value = defaultParameterType(type, connectedNode, connectedWidget)
+    const parameterTypeMismatch = !parameterTypes[type].includes(parameterTypeHint)
+    if (notSpecialized || parameterTypeMismatch) {
         node.widgets[1].options = {values: parameterTypes[type]}
+    }
+    if (parameterTypeMismatch) {
+        node.widgets[1].value = defaultParameterType(type, connectedNode, connectedWidget)
     }
     const oldDefault = node.widgets[2].value
     const isDefaultValid = valueMatchesType(oldDefault, type, connectedWidget.options)
@@ -140,7 +143,7 @@ function adaptWidgetsToConnection(node) {
         if (!theirNode || !theirNode.inputs) return
     
         const input = theirNode.inputs[link.target_slot]
-        if (!input) return
+        if (!input || theirNode.widgets === undefined) return
 
         node.outputs[0].type = input.type
 
