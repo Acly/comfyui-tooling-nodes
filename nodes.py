@@ -274,17 +274,16 @@ def _encode_image(
 
 
 def _downsample_image_cond(cond: torch.Tensor, weight: float):
-    match weight:
-        case x if x >= 1.0:
-            return cond
-        case x if x <= 0.0:
-            return torch.zeros_like(cond)
-        case x if x >= 0.6:
-            factor = 2
-        case x if x >= 0.3:
-            factor = 3
-        case _:
-            factor = 4
+    if weight >= 1.0:
+        return cond
+    elif weight <= 0.0:
+        return torch.zeros_like(cond)
+    elif weight >= 0.6:
+        factor = 2
+    elif weight >= 0.3:
+        factor = 3
+    else:
+        factor = 4
 
     # Downsample the clip vision embedding to make it smaller, resulting in less impact
     # compared to other conditioning.
