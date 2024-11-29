@@ -33,8 +33,11 @@ model_names = {
     "HunyuanDiT": "hunyuan-dit",
     "HunyuanDiT1": "hunyuan-dit",
     "Flux": "flux",
+    "FluxInpaint": "flux",
     "FluxSchnell": "flux-schnell",
 }
+
+gguf_architectures = {"sd1": "sd15"}
 
 
 class FakeTensor(NamedTuple):
@@ -48,7 +51,7 @@ class FakeTensor(NamedTuple):
             return d
 
 
-def inspect_diffusion_model(filename: str, model_type: str, is_checkpoint: bool):
+def inspect_safetensors(filename: str, model_type: str, is_checkpoint: bool):
     try:
         # Read header of safetensors file
         path = folder_paths.get_full_path(model_type, filename)
@@ -86,15 +89,52 @@ def inspect_diffusion_model(filename: str, model_type: str, is_checkpoint: bool)
 
             base_model_class = base_model.__class__
             base_model_name = model_names.get(base_model_class.__name__, "unknown")
+            is_inpaint = (
+                base_model_name in ["sd15", "sdxl"] and input_count > 4
+            ) or base_model_class.__name__ == "FluxInpaint"
             return {
                 "base_model": base_model_name,
-                "is_inpaint": base_model_name in ["sd15", "sdxl"] and input_count > 4,
+                "is_inpaint": is_inpaint,
                 "is_refiner": base_model_class is supported_models.SDXLRefiner,
             }
         return {"base_model": "unknown"}
     except Exception as e:
         # traceback.print_exc()
         return {"base_model": "unknown", "error": f"Failed to detect base model: {e}"}
+
+
+def inspect_gguf(filename: str, model_type: str):
+    try:
+        import gguf
+    except ImportError:
+        return {"base_model": "unknown", "error": "GGUF module not found"}
+
+    try:
+        path = folder_paths.get_full_path(model_type, filename)
+        reader = gguf.GGUFReader(path)
+        arch_field = reader.get_field("general.architecture")
+        if arch_field is not None:
+            if len(arch_field.types) != 1 or arch_field.types[0] != gguf.GGUFValueType.STRING:
+                raise TypeError(
+                    f"Bad type for GGUF general.architecture key: expected string, got {arch_field.types!r}"
+                )
+            arch_str = str(arch_field.parts[arch_field.data[-1]], encoding="utf-8")
+        else:  # stable-diffusion.cpp, requires conversion. not handled for now
+            return {"base_model": "flux", "is_inpaint": False, "is_refiner": False}
+        return {
+            "base_model": gguf_architectures.get(arch_str, arch_str),
+            "is_inpaint": False,
+            "is_refiner": False,
+        }
+    except Exception as e:
+        # traceback.print_exc()
+        return {"base_model": "unknown", "error": f"Failed to detect base model: {e}"}
+
+
+def inspect_diffusion_model(filename: str, model_type: str, is_checkpoint: bool):
+    if filename.endswith(".gguf"):
+        return inspect_gguf(filename, model_type)
+    return inspect_safetensors(filename, model_type, is_checkpoint)
 
 
 def inspect_models(model_type: str):
