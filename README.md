@@ -13,9 +13,9 @@ Provides nodes and API geared towards using ComfyUI as a backend for external to
 ## <a id="images" href="#toc">Sending and receiving images</a>
 
 ComfyUI exchanges images via the filesystem. This requires a
-multi-step process (upload images, prompt, download images), is rather
-inefficient, and invites a whole class of potential issues. It's also unclear
-at which point those images will get cleaned up if ComfyUI is used
+multi-step process (upload images, prompt, download images), which
+invites a whole class of potential issues you might not want to deal with.
+It's also unclear at which point those images will get cleaned up if ComfyUI is used
 via external tools.
 
 ### Load Image (Base64)

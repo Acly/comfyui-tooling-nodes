@@ -139,10 +139,14 @@ def inspect_diffusion_model(filename: str, model_type: str, is_checkpoint: bool)
 
 def inspect_models(model_type: str):
     try:
+        try:
+            files = folder_paths.get_filename_list(model_type)
+        except KeyError:
+            return {"error": f"Model folder not found: {model_type}"}
         is_checkpoint = model_type == "checkpoints"
         info = {
             filename: inspect_diffusion_model(filename, model_type, is_checkpoint)
-            for filename in folder_paths.get_filename_list(model_type)
+            for filename in files
         }
         return web.json_response(info)
     except Exception as e:
