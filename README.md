@@ -172,12 +172,14 @@ Lists available models with additional classification info:
     "checkpoint_file.safetensors": {
         "base_model": "sd15",
         "is_inpaint": false,
-        "is_refiner": false
+        "type": "eps"
     },
     ...
 }
 ```
-Possible values for base model: `sd15, sd20, sd21, sd3, sdxl, ssd1b, svd, cascade-b, cascade-c, aura-flow, hunyuan-dit, flux, flux-schnell`
+Possible values for base model: `sd15, sd20, sd21, sd3, sdxl, sdxl-refiner, ssd1b, svd, cascade-b, cascade-c, aura-flow, hunyuan-dit, flux, flux-schnell`
+
+If base model is `sdxl`, the `type` attribute is set with possible values: `eps, edm, v-prediction, v-prediction-edm`
 
 The entry is `{"base_model": "unknown"}` for models which are not in safetensors format or do not match any of the known base models.
 

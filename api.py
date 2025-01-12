@@ -22,7 +22,7 @@ model_names = {
     "SD20": "sd20",
     "SD21UnclipL": "sd21",
     "SD21UnclipH": "sd21",
-    "SDXLRefiner": "sdxl",
+    "SDXLRefiner": "sdxl-refiner",
     "SDXL": "sdxl",
     "SSD1B": "ssd1b",
     "SVD_img2vid": "svd",
@@ -35,6 +35,9 @@ model_names = {
     "Flux": "flux",
     "FluxInpaint": "flux",
     "FluxSchnell": "flux-schnell",
+    "GenmoMochi": "mochi",
+    "LTXV": "ltxv",
+    "HunyuanVideo": "hunyuan-video",
 }
 
 gguf_architectures = {"sd1": "sd15"}
@@ -89,14 +92,13 @@ def inspect_safetensors(filename: str, model_type: str, is_checkpoint: bool):
 
             base_model_class = base_model.__class__
             base_model_name = model_names.get(base_model_class.__name__, "unknown")
-            is_inpaint = (
+            result = {"base_model": base_model_name}
+            result["is_inpaint"] = (
                 base_model_name in ["sd15", "sdxl"] and input_count > 4
             ) or base_model_class.__name__ == "FluxInpaint"
-            return {
-                "base_model": base_model_name,
-                "is_inpaint": is_inpaint,
-                "is_refiner": base_model_class is supported_models.SDXLRefiner,
-            }
+            if base_model_name == "sdxl":
+                result["type"] = base_model.model_type(cfg).name.lower().replace("_", "-")
+            return result
         return {"base_model": "unknown"}
     except Exception as e:
         # traceback.print_exc()
@@ -120,11 +122,10 @@ def inspect_gguf(filename: str, model_type: str):
                 )
             arch_str = str(arch_field.parts[arch_field.data[-1]], encoding="utf-8")
         else:  # stable-diffusion.cpp, requires conversion. not handled for now
-            return {"base_model": "flux", "is_inpaint": False, "is_refiner": False}
+            return {"base_model": "flux", "is_inpaint": False}
         return {
             "base_model": gguf_architectures.get(arch_str, arch_str),
             "is_inpaint": False,
-            "is_refiner": False,
         }
     except Exception as e:
         # traceback.print_exc()
