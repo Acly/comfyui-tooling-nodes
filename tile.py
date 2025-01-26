@@ -36,7 +36,7 @@ class TileLayout:
     def init(self, image: Tensor, min_tile_size: int, padding: int, blending: int):
         assert all([x % 8 == 0 for x in image.shape[-3:-1]]), "Image size must be divisible by 8"
         assert min_tile_size % 8 == 0, "Tile size must be divisible by 8"
-        assert blending < padding, "Blending must be smaller than padding"
+        assert blending <= padding, "Blending must be smaller than padding"
 
         self.image_size = np.array(image.shape[-3:-1])
         self.padding = padding
