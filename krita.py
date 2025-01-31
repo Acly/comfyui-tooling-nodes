@@ -7,6 +7,7 @@ from PIL import Image
 
 import server
 import comfy.samplers
+from comfy.comfy_types.node_typing import IO
 from .nodes import SendImageWebSocket
 
 
@@ -56,13 +57,10 @@ def _placeholder_image():
     return torch.from_numpy(image)[None,]
 
 
-class _AnyType(str):
-    def __ne__(self, other):
-        return False
-
-
 class _BasicTypes(str):
-    basic_types = ["INT", "FLOAT", "STRING", "BOOLEAN"]
+    """Matches IO.PRIMITIVE, but also any list of choices"""
+
+    basic_types = IO.PRIMITIVE.split(",")  # STRING, FLOAT, INT, BOOLEAN
 
     def __eq__(self, other):
         return other in self.basic_types or isinstance(other, (list, _BasicTypes))
@@ -71,7 +69,6 @@ class _BasicTypes(str):
         return not self.__eq__(other)
 
 
-AnyType = _AnyType("*")
 BasicTypes = _BasicTypes("BASIC")
 
 
@@ -94,7 +91,7 @@ class KritaSendText:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "value": (AnyType, {}),
+                "value": (IO.ANY, {}),
                 "name": ("STRING", {"default": "Output"}),
                 "type": (["text", "markdown", "html"], {"default": "text"}),
             }
