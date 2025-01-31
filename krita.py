@@ -62,7 +62,7 @@ class _AnyType(str):
 
 
 class _BasicTypes(str):
-    basic_types = ["INT", "FLOAT", "STRING", "BOOL"]
+    basic_types = ["INT", "FLOAT", "STRING", "BOOLEAN"]
 
     def __eq__(self, other):
         return other in self.basic_types or isinstance(other, (list, _BasicTypes))
