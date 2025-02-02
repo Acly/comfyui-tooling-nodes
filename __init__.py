@@ -1,4 +1,4 @@
-from . import api, nodes, tile, region, nsfw, translation, krita
+from . import api as api, nodes, tile, region, nsfw, translation, krita
 
 NODE_CLASS_MAPPINGS = {
     "ETN_LoadImageBase64": nodes.LoadImageBase64,

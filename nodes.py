@@ -85,9 +85,11 @@ class SendImageWebSocket:
                 [format, image, None],
                 server.client_id,
             )
-            results.append(
-                {"source": "websocket", "content-type": f"image/{format.lower()}", "type": "output"}
-            )
+            results.append({
+                "source": "websocket",
+                "content-type": f"image/{format.lower()}",
+                "type": "output",
+            })
 
         return {"ui": {"images": results}}
 
@@ -166,9 +168,9 @@ class ApplyMaskToImage:
 
         assert mask.ndim == 3, f"Mask should have shape [B, H, W]. {mask.shape}"
         assert out.ndim == 4, f"Image should have shape [B, C, H, W]. {out.shape}"
-        assert (
-            out.shape[-2:] == mask.shape[-2:]
-        ), f"Image size {out.shape[-2:]} must match mask size {mask.shape[-2:]}"
+        assert out.shape[-2:] == mask.shape[-2:], (
+            f"Image size {out.shape[-2:]} must match mask size {mask.shape[-2:]}"
+        )
         is_mask_batch = mask.shape[0] == out.shape[0]
 
         # Apply each mask in the batch to its corresponding image's alpha channel

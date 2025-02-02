@@ -7,7 +7,7 @@ import traceback
 import re
 import logging
 
-from comfy import model_detection, supported_models
+from comfy import model_detection
 import comfy.utils
 import folder_paths
 import server
@@ -179,7 +179,6 @@ def has_invalid_filename(filename: str):
 
 _server: server.PromptServer | None = getattr(server.PromptServer, "instance", None)
 if _server is not None:
-
     _workflow_exchange = WorkflowExchange(_server)
 
     @_server.routes.get("/api/etn/model_info/{folder_name}")
@@ -190,10 +189,6 @@ if _server is not None:
         return inspect_models(folder_name)
 
     @_server.routes.get("/api/etn/model_info")
-    async def api_model_info(request):
-        return inspect_models("checkpoints")
-
-    @_server.routes.get("/etn/model_info")
     async def api_model_info(request):
         return inspect_models("checkpoints")
 
@@ -231,7 +226,9 @@ if _server is not None:
 
             folder = Path(folder_paths.folder_names_and_paths[folder_name][0][0])
             total_size = int(request.headers.get("Content-Length", "0"))
-            logging.info(f"Uploading {filename} ({total_size/(1024**2):.1f} MB) to {folder} folder")
+            logging.info(
+                f"Uploading {filename} ({total_size / (1024**2):.1f} MB) to {folder} folder"
+            )
 
             with open(folder / filename, "wb") as f:
                 async for chunk, _ in request.content.iter_chunks():

@@ -1,11 +1,19 @@
 [project]
 name = "comfyui-tooling-nodes"
 description = "Provides nodes and server API extensions geared towards using ComfyUI as a backend for external tools."
-version = "2.0.0"
+version = "2.0.1"
 license = { file = "LICENSE" }
 
 [project.urls]
 Repository = "https://github.com/Acly/comfyui-tooling-nodes"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+preview = true
+
+[tool.ruff.lint]
+ignore = ["E741"]
 
 [tool.black]
 line-length = 100

@@ -115,7 +115,6 @@ class ListRegionMasks:
 
 
 class AttentionMask:
-
     @classmethod
     def INPUT_TYPES(s):
         return {
