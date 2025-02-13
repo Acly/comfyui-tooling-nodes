@@ -38,6 +38,7 @@ model_names = {
     "GenmoMochi": "mochi",
     "LTXV": "ltxv",
     "HunyuanVideo": "hunyuan-video",
+    "Lumina2": "lumina2",
 }
 
 gguf_architectures = {"sd1": "sd15"}
