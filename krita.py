@@ -156,13 +156,13 @@ class KritaImageLayer:
             }
         }
 
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("image",)
+    RETURN_TYPES = ("IMAGE", "MASK")
+    RETURN_NAMES = ("image", "mask")
     FUNCTION = "placeholder"
     CATEGORY = "krita"
 
     def placeholder(self, name: str):
-        return (_placeholder_image(),)
+        return (_placeholder_image(), torch.ones(1, 512, 512))
 
 
 class KritaMaskLayer:
