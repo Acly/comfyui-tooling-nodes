@@ -94,12 +94,6 @@ function valueMatchesType(value, type, options) {
     return typeof value === "string"
 }
 
-function changeWidget(widget, type, value, options) {
-    widget.type = type
-    widget.value = value
-    widget.options = options
-}
-
 function changeWidgets(node, type, connectedNode, connectedWidget) {
     if (type === "customtext") {
         type = "text"
@@ -115,18 +109,18 @@ function changeWidgets(node, type, connectedNode, connectedWidget) {
     if (parameterTypeMismatch) {
         node.widgets[1].value = defaultParameterType(type, connectedNode, connectedWidget)
     }
-    const oldDefault = node.widgets[2].value
+    const oldDefault = node.widgets.length > 2 ? node.widgets[2].value : connectedWidget.value
+    const oldMin = node.widgets.length > 3 ? node.widgets[3].value : (options?.min ?? 0)
+    const oldMax = node.widgets.length > 4 ? node.widgets[4].value : (options?.max ?? 100)
     const isDefaultValid = valueMatchesType(oldDefault, type, connectedWidget.options)
-    if (node.widgets[2].type !== type || !isDefaultValid) {
-        const value = isDefaultValid && oldDefault !== "" ? oldDefault : connectedWidget.value
-        changeWidget(node.widgets[2], type, value, options)
+    while (node.widgets.length > 2) {
+        node.widgets.pop()
     }
-    if (type === "number" && node.widgets[3].value === 0 && node.widgets[4].value === 0) {
-        changeWidget(node.widgets[3], "number", options?.min ?? 0, options)
-        changeWidget(node.widgets[4], "number", options?.max ?? 100, options)
-    } else if (type !== "number") {
-        changeWidget(node.widgets[3], "number", 0, {min: 0, max: 0})
-        changeWidget(node.widgets[4], "number", 0, {min: 0, max: 0})
+    const value = isDefaultValid && oldDefault !== "" ? oldDefault : connectedWidget.value
+    node.addWidget(type, "default", value, null, options)
+    if (type === "number") {
+        node.addWidget("number", "min", oldMin, null, options)
+        node.addWidget("number", "max", oldMax, null, options)
     }
 }
 
