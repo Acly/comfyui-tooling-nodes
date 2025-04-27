@@ -22,7 +22,8 @@ class LoadImageBase64:
     CATEGORY = "external_tooling"
     FUNCTION = "load_image"
 
-    def load_image(self, image):
+    def load_image(self, image: str):
+        _strip_prefix(image, "data:image/png;base64,")
         imgdata = base64.b64decode(image)
         img = Image.open(BytesIO(imgdata))
 
@@ -48,7 +49,8 @@ class LoadMaskBase64:
     CATEGORY = "external_tooling"
     FUNCTION = "load_mask"
 
-    def load_mask(self, mask):
+    def load_mask(self, mask: str):
+        _strip_prefix(mask, "data:image/png;base64,")
         imgdata = base64.b64decode(mask)
         img = Image.open(BytesIO(imgdata))
         img = np.array(img).astype(np.float32) / 255.0
@@ -298,3 +300,9 @@ def _downsample_image_cond(cond: torch.Tensor, weight: float):
         mode="area",
     )
     return cond.transpose(1, -1).reshape(b, -1, h)
+
+
+def _strip_prefix(s: str, prefix: str) -> str:
+    if s.startswith(prefix):
+        return s[len(prefix) :]
+    return s
