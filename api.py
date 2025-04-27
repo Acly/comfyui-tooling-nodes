@@ -144,7 +144,7 @@ def inspect_models(model_type: str):
         try:
             files = folder_paths.get_filename_list(model_type)
         except KeyError:
-            return {"error": f"Model folder not found: {model_type}"}
+            return web.json_response({"error": f"Model folder not found: {model_type}"})
         is_checkpoint = model_type == "checkpoints"
         info = {
             filename: inspect_diffusion_model(filename, model_type, is_checkpoint)
@@ -185,7 +185,8 @@ if _server is not None:
     @_server.routes.get("/api/etn/model_info/{folder_name}")
     async def model_info(request: web.Request):
         folder_name = request.match_info.get("folder_name", "checkpoints")
-        if error := has_invalid_folder_name(folder_name):
+        error = has_invalid_folder_name(folder_name)
+        if error is not None:
             return error
         return inspect_models(folder_name)
 
@@ -214,11 +215,13 @@ if _server is not None:
     @_server.routes.put("/api/etn/upload/{folder_name}/{filename}")
     async def upload(request: web.Request):
         folder_name = request.match_info.get("folder_name", "")
-        if error := has_invalid_folder_name(folder_name):
+        error = has_invalid_folder_name(folder_name)
+        if error is not None:
             return error
 
         filename = request.match_info.get("filename", "")
-        if error := has_invalid_filename(filename):
+        error = has_invalid_filename(filename)
+        if error is not None:
             return error
 
         try:
