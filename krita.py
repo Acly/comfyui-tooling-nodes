@@ -204,9 +204,11 @@ class Parameter:
                 "name": ("STRING", {"default": "Parameter"}),
                 "type": (_param_types, {"default": "auto"}),
                 "default": ("STRING", {"default": ""}),
+            },
+            "optional": {
                 "min": ("FLOAT", _any_float),
                 "max": ("FLOAT", _any_float),
-            }
+            },
         }
 
     RETURN_TYPES = (BasicTypes,)
@@ -214,7 +216,11 @@ class Parameter:
     FUNCTION = "placeholder"
     CATEGORY = "krita"
 
-    def placeholder(self, name: str, type: str, default, min, max):
+    def placeholder(self, name: str, type: str, default, min=0.0, max=1.0):
+        if type == "number":
+            return (float(default),)
+        elif type == "number (integer)":
+            return (int(default),)
         return (default,)
 
 

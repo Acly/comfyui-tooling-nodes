@@ -94,6 +94,11 @@ function valueMatchesType(value, type, options) {
     return typeof value === "string"
 }
 
+function optionalWidgetValue(widgets, index, fallback) {
+    const result = widgets.length > index ? widgets[index].value : null
+    return result === null || result === 0 ? fallback : result
+}
+
 function changeWidgets(node, type, connectedNode, connectedWidget) {
     if (type === "customtext") {
         type = "text"
@@ -110,8 +115,8 @@ function changeWidgets(node, type, connectedNode, connectedWidget) {
         node.widgets[1].value = defaultParameterType(type, connectedNode, connectedWidget)
     }
     const oldDefault = node.widgets.length > 2 ? node.widgets[2].value : connectedWidget.value
-    const oldMin = node.widgets.length > 3 ? node.widgets[3].value : (options?.min ?? 0)
-    const oldMax = node.widgets.length > 4 ? node.widgets[4].value : (options?.max ?? 100)
+    const oldMin = optionalWidgetValue(node.widgets, 3, options?.min ?? 0)
+    const oldMax = optionalWidgetValue(node.widgets, 4, options?.max ?? 100)
     const isDefaultValid = valueMatchesType(oldDefault, type, connectedWidget.options)
     while (node.widgets.length > 2) {
         node.widgets.pop()
