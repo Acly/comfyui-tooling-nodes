@@ -152,6 +152,8 @@ function adaptWidgetsToConnection(node) {
 
         const widgetName = input.widget.name
         const theirWidget = theirNode.widgets.find((w) => w.name === widgetName)
+        if (!theirWidget) return // connected to a custom node that isn't installed
+
         const widgetType = theirWidget.origType ?? theirWidget.type
         changeWidgets(node, widgetType, theirNode, theirWidget)
 
