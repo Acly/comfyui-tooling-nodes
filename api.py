@@ -71,9 +71,7 @@ def inspect_safetensors(filename: str, model_type: str, is_checkpoint: bool):
             # Reuse Comfy's model detection
             prefix = model_detection.unet_prefix_from_state_dict(cfg)
             if not is_checkpoint:
-                temp_sd = comfy.utils.state_dict_prefix_replace(cfg, {prefix: ""}, filter_keys=True)
-                if len(temp_sd) > 0:
-                    cfg = temp_sd
+                cfg = comfy.utils.state_dict_prefix_replace(cfg, {prefix: ""}, filter_keys=False)
                 prefix = ""
             try:  # latest ComfyUI takes 2 args
                 unet_config = model_detection.detect_unet_config(cfg, prefix)
