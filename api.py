@@ -6,6 +6,7 @@ import json
 import traceback
 import re
 import logging
+import itertools
 
 from comfy import model_detection
 import comfy.utils
@@ -38,7 +39,19 @@ model_names = {
     "GenmoMochi": "mochi",
     "LTXV": "ltxv",
     "HunyuanVideo": "hunyuan-video",
-    "Lumina2": "lumina2",
+    "CosmosT2V": "cosmos",
+    "CosmosI2V": "cosmos",
+    "CosmosT2IPredict2": "cosmos-predict2",
+    "CosmosI2VPredict2": "cosmos-predict2",
+    "WAN21_T2V": "wan21",
+    "WAN21_I2V": "wan21",
+    "WAN21_FunControl2V": "wan21-fun",
+    "WAN21_Vace": "wan21-vace",
+    "WAN21_Camera": "wan21-camera",
+    "HiDream": "hi-dream",
+    "Chroma": "chroma",
+    "ACEStep": "ace-step",
+    "Omnigen2": "omnigen2"
 }
 
 gguf_architectures = {"sd1": "sd15"}
@@ -90,13 +103,22 @@ def inspect_safetensors(filename: str, model_type: str, is_checkpoint: bool):
                 return {"base_model": "unknown"}
 
             base_model_class = base_model.__class__
-            base_model_name = model_names.get(base_model_class.__name__, "unknown")
+            raw_name = base_model_class.__name__
+            base_model_name = model_names.get(raw_name, "unknown")
             result = {"base_model": base_model_name}
             result["is_inpaint"] = (
                 base_model_name in ["sd15", "sdxl"] and input_count > 4
-            ) or base_model_class.__name__ == "FluxInpaint"
+            ) or raw_name == "FluxInpaint"
             if base_model_name == "sdxl":
                 result["type"] = base_model.model_type(cfg).name.lower().replace("_", "-")
+            elif "T2I" in raw_name:
+                result["type"] = "t2i"
+            elif "I2V" in raw_name:
+                result["type"] = "i2v"
+            elif "T2V" in raw_name:
+                result["type"] = "t2v"
+            elif "Control2V" in raw_name:
+                result["type"] = "control2v"
             return result
         return {"base_model": "unknown"}
     except Exception as e:
@@ -122,6 +144,8 @@ def inspect_gguf(filename: str, model_type: str):
             arch_str = str(arch_field.parts[arch_field.data[-1]], encoding="utf-8")
         else:  # stable-diffusion.cpp, requires conversion. not handled for now
             return {"base_model": "flux", "is_inpaint": False}
+        if arch_str == "flux" and any(t.name.startswith("distilled_guidance_layer") for t in itertools.islice(reader.tensors, 5)):
+            arch_str = "chroma"
         return {
             "base_model": gguf_architectures.get(arch_str, arch_str),
             "is_inpaint": False,
