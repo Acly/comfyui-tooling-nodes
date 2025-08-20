@@ -163,7 +163,7 @@ There are various types of models that can be loaded as checkpoint, LoRA, Contro
 
 #### Paramters
 * `folder_name`: sub-directory in ComfyUI's models folder.
-  Supported model types: `checkpoints`, `diffusion_models`
+  Supported model types: `checkpoints`, `diffusion_models`, `unet`, `unet_gguf`
 
 #### Output
 Lists available models with additional classification info:
@@ -177,11 +177,15 @@ Lists available models with additional classification info:
     ...
 }
 ```
-Possible values for base model: `sd15, sd20, sd21, sd3, sdxl, sdxl-refiner, ssd1b, svd, cascade-b, cascade-c, aura-flow, hunyuan-dit, flux, flux-schnell, lumina2`
+Possible values for base model: `sd15, sd20, sd21, sd3, sdxl, sdxl-refiner, ssd1b, svd, cascade-b, cascade-c, aura-flow, hunyuan-dit, flux, flux-schnell, lumina2, chroma, qwen-image`
 
 If base model is `sdxl`, the `type` attribute is set with possible values: `eps, edm, v-prediction, v-prediction-edm`
 
-The entry is `{"base_model": "unknown"}` for models which are not in safetensors format or do not match any of the known base models.
+Detection supports quantized models:
+* GGUF: if the `gguf` module is installed, .gguf files are detected and will set the `quant` field
+* Nunchaku: SVDQuant models are detected and will set the `quant` field to `svdq`
+
+Returns an entry `{"base_model": "unknown"}` for models with unknown format or which do not match any of the known base models.
 
 ### GET /api/etn/languages
 

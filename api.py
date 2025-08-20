@@ -51,7 +51,8 @@ model_names = {
     "HiDream": "hi-dream",
     "Chroma": "chroma",
     "ACEStep": "ace-step",
-    "Omnigen2": "omnigen2"
+    "Omnigen2": "omnigen2",
+    "QwenImage": "qwen-image"
 }
 
 gguf_architectures = {"sd1": "sd15"}
@@ -98,19 +99,32 @@ def inspect_safetensors(filename: str, model_type: str, is_checkpoint: bool):
                 input_count = 4
 
             # Find a matching base model depending on unet config
-            base_model = model_detection.model_config_from_unet_config(unet_config)
+            base_model = None
+            model_type = None
+            model_quant = None
+            if unet_config is not None:
+                base_model = model_detection.model_config_from_unet_config(unet_config)
+
             if base_model is None:
+                raw_name = detect_svdq(cfg)
+                model_quant = "svdq"
+            else:
+                raw_name = base_model.__class__.__name__
+                if raw_name == "SDXL":
+                    model_type = base_model.model_type(cfg).name.lower().replace("_", "-")
+
+            if not raw_name:
                 return {"base_model": "unknown"}
 
-            base_model_class = base_model.__class__
-            raw_name = base_model_class.__name__
             base_model_name = model_names.get(raw_name, "unknown")
             result = {"base_model": base_model_name}
             result["is_inpaint"] = (
                 base_model_name in ["sd15", "sdxl"] and input_count > 4
             ) or raw_name == "FluxInpaint"
-            if base_model_name == "sdxl":
-                result["type"] = base_model.model_type(cfg).name.lower().replace("_", "-")
+            if model_quant:
+                result["quant"] = model_quant
+            if model_type:
+                result["type"] = model_type
             elif "T2I" in raw_name:
                 result["type"] = "t2i"
             elif "I2V" in raw_name:
@@ -122,8 +136,22 @@ def inspect_safetensors(filename: str, model_type: str, is_checkpoint: bool):
             return result
         return {"base_model": "unknown"}
     except Exception as e:
-        # traceback.print_exc()
+        traceback.print_exc()
         return {"base_model": "unknown", "error": f"Failed to detect base model: {e}"}
+
+
+def detect_svdq(cfg: dict) -> str | None:
+    if md := cfg.get("__metadata__"):
+        if comfy_config := md.get("comfy_config"):
+            if isinstance(comfy_config, str):
+                comfy_config = json.loads(comfy_config)
+            return comfy_config.get("model_class")
+        model_class = md.get("model_class")
+        if model_class == "NunchakuFluxTransformer2dModel":
+            return "Flux"
+        if model_class == "NunchakuQwenImageTransformer2DModel":
+            return "QwenImage"
+    return None
 
 
 def inspect_gguf(filename: str, model_type: str):
@@ -146,10 +174,17 @@ def inspect_gguf(filename: str, model_type: str):
             return {"base_model": "flux", "is_inpaint": False}
         if arch_str == "flux" and any(t.name.startswith("distilled_guidance_layer") for t in itertools.islice(reader.tensors, 5)):
             arch_str = "chroma"
-        return {
+
+        result = {
             "base_model": gguf_architectures.get(arch_str, arch_str),
             "is_inpaint": False,
         }
+        try:
+            result["quant"] = reader.get_field("general.file_type").lower()
+        except Exception as e:
+            result["quant"] = "gguf"
+        return result
+    
     except Exception as e:
         # traceback.print_exc()
         return {"base_model": "unknown", "error": f"Failed to detect base model: {e}"}
