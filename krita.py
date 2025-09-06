@@ -138,13 +138,13 @@ class KritaSelection:
     def INPUT_TYPES(cls):
         return {}
 
-    RETURN_TYPES = ("MASK",)
-    RETURN_NAMES = ("mask",)
+    RETURN_TYPES = (IO.MASK, IO.BOOLEAN)
+    RETURN_NAMES = ("mask", "active")
     FUNCTION = "placeholder"
     CATEGORY = "krita"
 
     def placeholder(self):
-        return (torch.ones(1, 512, 512),)
+        return (torch.ones(1, 512, 512), False)
 
 
 class KritaImageLayer:
