@@ -105,16 +105,18 @@ def inspect_safetensors(filename: str, model_type: str, is_checkpoint: bool):
             base_model = None
             model_type = None
             model_quant = None
-            if unet_config is not None:
-                base_model = model_detection.model_config_from_unet_config(unet_config)
 
-            if base_model is None:
-                raw_name = detect_svdq(cfg)
+            # Check if it's a Nunchaku SVDQ model by inspecting metadata
+            raw_name = detect_svdq(cfg)
+            if raw_name:
                 model_quant = "svdq"
-            else:
-                raw_name = base_model.__class__.__name__
-                if raw_name == "SDXL":
-                    model_type = base_model.model_type(cfg).name.lower().replace("_", "-")
+            # Otherwise try ComfyUI's model detection
+            elif unet_config is not None:
+                base_model = model_detection.model_config_from_unet_config(unet_config)
+                if base_model:
+                    raw_name = base_model.__class__.__name__
+                    if raw_name == "SDXL":
+                        model_type = base_model.model_type(cfg).name.lower().replace("_", "-")
 
             if not raw_name:
                 return {"base_model": "unknown"}
