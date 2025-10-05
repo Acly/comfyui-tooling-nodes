@@ -52,10 +52,13 @@ model_names = {
     "Chroma": "chroma",
     "ACEStep": "ace-step",
     "Omnigen2": "omnigen2",
-    "QwenImage": "qwen-image"
+    "QwenImage": "qwen-image",
 }
 
-gguf_architectures = {"sd1": "sd15"}
+gguf_architectures = {
+    "sd1": "sd15",
+    "qwen_image": "qwen-image",
+}
 
 
 class FakeTensor(NamedTuple):
@@ -172,7 +175,10 @@ def inspect_gguf(filename: str, model_type: str):
             arch_str = str(arch_field.parts[arch_field.data[-1]], encoding="utf-8")
         else:  # stable-diffusion.cpp, requires conversion. not handled for now
             return {"base_model": "flux", "is_inpaint": False}
-        if arch_str == "flux" and any(t.name.startswith("distilled_guidance_layer") for t in itertools.islice(reader.tensors, 5)):
+        if arch_str == "flux" and any(
+            t.name.startswith("distilled_guidance_layer")
+            for t in itertools.islice(reader.tensors, 5)
+        ):
             arch_str = "chroma"
 
         result = {
@@ -184,7 +190,7 @@ def inspect_gguf(filename: str, model_type: str):
         except Exception as e:
             result["quant"] = "gguf"
         return result
-    
+
     except Exception as e:
         # traceback.print_exc()
         return {"base_model": "unknown", "error": f"Failed to detect base model: {e}"}
