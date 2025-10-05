@@ -142,7 +142,7 @@ function adaptWidgetsToConnection(node) {
         if (!theirNode || !theirNode.inputs) return
     
         const input = theirNode.inputs[link.target_slot]
-        if (!input || theirNode.widgets === undefined) return
+        if (!input || !input.widget || theirNode.widgets === undefined) return
 
         node.outputs[0].type = input.type
 
