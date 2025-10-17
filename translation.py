@@ -43,7 +43,7 @@ def translate_chunk(text: str, language: str):
                 (p for p in available if p.from_code == language and p.to_code == target), None
             )
             assert pkg, f"Couldn't find package for translation from {language}"
-            print("Downloading and installing translation package", pkg)
+            # print("Downloading and installing translation package", pkg)  # this will cause encoding errors
             pkg.install()
 
         text, embeddings = _extract_embeddings(text)
