@@ -3,49 +3,25 @@ import numpy as np
 import numpy.typing as npt
 import torch
 from torch import Tensor
+from comfy_api.latest import io
 
 IntArray = npt.NDArray[np.int_]
 
 
 class TileLayout:
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "image": ("IMAGE",),
-                "min_tile_size": ("INT", {"default": 512, "min": 64, "max": 8192, "step": 8}),
-                "padding": ("INT", {"default": 32, "min": 0, "max": 8192, "step": 8}),
-                "blending": ("INT", {"default": 8, "min": 0, "max": 256, "step": 8}),
-            }
-        }
-
-    CATEGORY = "external_tooling/tiles"
-    RETURN_TYPES = ("TILE_LAYOUT",)
-    FUNCTION = "node"
-
-    image_size: IntArray
-    tile_size: IntArray
-    padding: int
-    blending: int
-    tile_count: IntArray
-
-    def node(self, image: Tensor, min_tile_size: int, padding: int, blending: int):
-        self.init(image, min_tile_size, padding, blending)
-        return (self,)
-
-    def init(self, image: Tensor, min_tile_size: int, padding: int, blending: int):
+    def __init__(self, image: Tensor, min_tile_size: int, padding: int, blending: int):
         assert all([x % 8 == 0 for x in image.shape[-3:-1]]), "Image size must be divisible by 8"
         assert min_tile_size % 8 == 0, "Tile size must be divisible by 8"
         assert blending <= padding, "Blending must be smaller than padding"
 
-        self.image_size = np.array(image.shape[-3:-1])
-        self.padding = padding
-        self.blending = blending
-        self.tile_count = np.maximum(1, self.image_size // (min_tile_size - 2 * padding))
+        self.image_size: IntArray = np.array(image.shape[-3:-1])
+        self.padding: int = padding
+        self.blending: int = blending
+        self.tile_count: IntArray = np.maximum(1, self.image_size // (min_tile_size - 2 * padding))
 
         image_size_with_overlap = self.image_size + (self.tile_count - 1) * 2 * padding
         tile_size = np.ceil(image_size_with_overlap / self.tile_count)
-        self.tile_size = (np.ceil(tile_size / 8) * 8).astype(int)
+        self.tile_size: IntArray = (np.ceil(tile_size / 8) * 8).astype(int)
 
     def size(self, coord: IntArray):
         return self.end(coord) - self.start(coord)
@@ -96,80 +72,108 @@ class TileLayout:
         image[rect] = (1 - mask) * image[rect] + mask * tile
 
 
-class ExtractImageTile:
+class CreateTileLayout(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "image": ("IMAGE",),
-                "layout": ("TILE_LAYOUT",),
-                "index": ("INT", {"min": 0}),
-            }
-        }
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_TileLayout",
+            display_name="Create Tile Layout",
+            category="external_tooling/tiles",
+            inputs=[
+                io.Image.Input("image"),
+                io.Int.Input("min_tile_size", default=512, min=64, max=8192, step=8),
+                io.Int.Input("padding", default=32, min=0, max=8192, step=8),
+                io.Int.Input("blending", default=8, min=0, max=256, step=8),
+            ],
+            outputs=[io.Custom("TileLayout").Output(display_name="layout")],
+        )
 
-    CATEGORY = "external_tooling/tiles"
-    RETURN_TYPES = ("IMAGE",)
-    FUNCTION = "slice"
-
-    def slice(self, image: Tensor, layout: TileLayout, index: int):
-        return (layout.tile(image, index),)
-
-
-class ExtractMaskTile:
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "mask": ("MASK",),
-                "layout": ("TILE_LAYOUT",),
-                "index": ("INT", {"min": 0}),
-            }
-        }
+    def execute(cls, image: Tensor, min_tile_size: int, padding: int, blending: int):
+        return io.NodeOutput(TileLayout(image, min_tile_size, padding, blending))
 
-    CATEGORY = "external_tooling/tiles"
-    RETURN_TYPES = ("MASK",)
-    FUNCTION = "slice"
 
-    def slice(self, mask: Tensor, layout: TileLayout, index: int):
+class ExtractImageTile(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_ExtractImageTile",
+            display_name="Extract Image Tile",
+            category="external_tooling/tiles",
+            inputs=[
+                io.Image.Input("image"),
+                io.Custom("TileLayout").Input("layout"),
+                io.Int.Input("index", default=0, min=0),
+            ],
+            outputs=[io.Image.Output(display_name="tile")],
+        )
+
+    @classmethod
+    def execute(cls, image: Tensor, layout: TileLayout, index: int):
+        return io.NodeOutput(layout.tile(image, index))
+
+
+class ExtractMaskTile(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_ExtractMaskTile",
+            display_name="Extract Mask Tile",
+            category="external_tooling/tiles",
+            inputs=[
+                io.Mask.Input("mask"),
+                io.Custom("TileLayout").Input("layout"),
+                io.Int.Input("index", default=0, min=0),
+            ],
+            outputs=[io.Mask.Output(display_name="tile")],
+        )
+
+    @classmethod
+    def execute(cls, mask: Tensor, layout: TileLayout, index: int):
         tile = layout.tile(mask.unsqueeze(3), index)
-        return (tile.squeeze(3),)
+        return io.NodeOutput(tile.squeeze(3))
 
 
-class GenerateTileMask:
+class GenerateTileMask(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {"layout": ("TILE_LAYOUT",), "index": ("INT", {"min": 0})},
-            "optional": {"blend": ("BOOLEAN",)},
-        }
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_GenerateTileMask",
+            display_name="Generate Tile Mask",
+            category="external_tooling/tiles",
+            inputs=[
+                io.Custom("TileLayout").Input("layout"),
+                io.Int.Input("index", default=0, min=0),
+                io.Boolean.Input("blend", default=False, optional=True),
+            ],
+            outputs=[io.Mask.Output(display_name="mask")],
+        )
 
-    CATEGORY = "external_tooling/tiles"
-    RETURN_TYPES = ("MASK",)
-    FUNCTION = "generate"
-
-    def generate(self, layout: TileLayout, index: int, blend: bool = False):
-        return (layout.mask(layout.coord(index), blend=blend),)
-
-
-class MergeImageTile:
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "image": ("IMAGE",),
-                "layout": ("TILE_LAYOUT",),
-                "index": ("INT", {"min": 0}),
-                "tile": ("IMAGE",),
-            }
-        }
+    def execute(cls, layout: TileLayout, index: int, blend: bool = False):
+        return io.NodeOutput(layout.mask(layout.coord(index), blend=blend))
 
-    CATEGORY = "external_tooling/tiles"
-    RETURN_TYPES = ("IMAGE",)
-    FUNCTION = "merge"
 
-    def merge(self, image: Tensor, layout: TileLayout, index: int, tile: Tensor):
+class MergeImageTile(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_MergeImageTile",
+            display_name="Merge Image Tile",
+            category="external_tooling/tiles",
+            inputs=[
+                io.Image.Input("image"),
+                io.Custom("TileLayout").Input("layout"),
+                io.Int.Input("index", default=0, min=0),
+                io.Image.Input("tile"),
+            ],
+            outputs=[io.Image.Output(display_name="image")],
+        )
+
+    @classmethod
+    def execute(cls, image: Tensor, layout: TileLayout, index: int, tile: Tensor):
         assert index < layout.total_count, f"Index {index} out of range"
         if index == 0:
             image = image.clone()
         layout.merge(image, index, tile)
-        return (image,)
+        return io.NodeOutput(image)

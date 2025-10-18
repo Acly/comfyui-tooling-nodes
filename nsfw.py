@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from torch import Tensor
 from transformers import CLIPImageProcessor, CLIPConfig, CLIPVisionModel, PreTrainedModel
 from kornia.filters import box_blur
+from comfy_api.latest import io
 
 from .nodes import to_bchw, to_bhwc
 
@@ -76,7 +77,7 @@ class CLIPSafetyChecker(PreTrainedModel):
 
 
 class CachedModels:
-    _instance: WeakRef | None = None
+    _instance: CachedModels | None = None
 
     def __init__(self):
         model_dir = Path(__file__).parent / "safetychecker"
@@ -91,11 +92,9 @@ class CachedModels:
 
     @classmethod
     def load(cls):
-        models = cls._instance and cls._instance()
-        if models is None:
-            models = cls()
-            cls._instance = WeakRef(models)
-        return models
+        if cls._instance is None:
+            cls._instance = CachedModels()
+        return cls._instance
 
     def download(self, url: str, target: Path):
         import requests
@@ -118,29 +117,26 @@ class CachedModels:
             ) from e
 
 
-class NSFWFilter:
-    models: CachedModels
+class NSFWFilter(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_NSFWFilter",
+            display_name="NSFW Filter",
+            category="external_tooling",
+            inputs=[
+                io.Image.Input("image"),
+                io.Float.Input("sensitivity", default=0.5, min=0.0, max=1.0, step=0.1),
+            ],
+            outputs=[io.Image.Output(display_name="image")],
+        )
 
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "image": ("IMAGE",),
-                "sensitivity": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.10}),
-            },
-        }
-
-    RETURN_TYPES = ("IMAGE",)
-    FUNCTION = "check"
-    CATEGORY = "external_tooling"
-
-    def __init__(self):
-        self.models = CachedModels.load()
-
-    def check(self, image, sensitivity):
+    def execute(cls, image: Tensor, sensitivity: float):
+        models = CachedModels.load()
         image = to_bchw(image)
-        input = self.models.feature_extractor(image, do_rescale=False, return_tensors="pt")
-        filtered = self.models.safety_checker(
+        input = models.feature_extractor(image, do_rescale=False, return_tensors="pt")
+        filtered = models.safety_checker(
             images=image, clip_input=input.pixel_values, sensitivity=sensitivity
         )
-        return (to_bhwc(filtered),)
+        return io.NodeOutput(to_bhwc(filtered))

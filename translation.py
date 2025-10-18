@@ -10,6 +10,7 @@ from __future__ import annotations
 import re
 from functools import cache
 from typing import NamedTuple
+from comfy_api.latest import io
 
 
 @cache
@@ -61,17 +62,20 @@ def translate(text: str):
     return " ".join(translate_chunk(c.text, c.lang) for c in chunks)
 
 
-class Translate:
-    @staticmethod
-    def INPUT_TYPES():
-        return {"required": {"text": ("STRING", {"multiline": True})}}
+class Translate(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_Translate",
+            display_name="Translate Text",
+            category="external_tooling",
+            inputs=[io.String.Input("text", multiline=True)],
+            outputs=[io.String.Output(display_name="translation")],
+        )
 
-    CATEGORY = "external_tooling"
-    RETURN_TYPES = ("STRING",)
-    FUNCTION = "translate"
-
-    def translate(self, text: str):
-        return (translate(text),)
+    @classmethod
+    def execute(cls, text: str):
+        return io.NodeOutput(translate(text))
 
 
 _lang_regex = re.compile(r"(lang:\w\w)")

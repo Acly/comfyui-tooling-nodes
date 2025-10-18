@@ -11,18 +11,22 @@ from server import PromptServer, BinaryEventTypes
 
 from comfy.clip_vision import ClipVisionModel
 from comfy.sd import StyleModel
+from comfy_api.latest import io
 
 
-class LoadImageBase64:
+class LoadImageBase64(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {"required": {"image": ("STRING", {"multiline": False})}}
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_LoadImageBase64",
+            display_name="Load Image (Base64)",
+            category="external_tooling",
+            inputs=[io.String.Input("image", multiline=False)],
+            outputs=[io.Image.Output(display_name="image"), io.Mask.Output(display_name="mask")],
+        )
 
-    RETURN_TYPES = ("IMAGE", "MASK")
-    CATEGORY = "external_tooling"
-    FUNCTION = "load_image"
-
-    def load_image(self, image: str):
+    @classmethod
+    def execute(cls, image: str):
         _strip_prefix(image, "data:image/png;base64,")
         imgdata = base64.b64decode(image)
         img = Image.open(BytesIO(imgdata))
@@ -40,16 +44,19 @@ class LoadImageBase64:
         return (img, mask)
 
 
-class LoadMaskBase64:
+class LoadMaskBase64(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {"required": {"mask": ("STRING", {"multiline": False})}}
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_LoadMaskBase64",
+            display_name="Load Mask (Base64)",
+            category="external_tooling",
+            inputs=[io.String.Input("mask", multiline=False)],
+            outputs=[io.Mask.Output(display_name="mask")],
+        )
 
-    RETURN_TYPES = ("MASK",)
-    CATEGORY = "external_tooling"
-    FUNCTION = "load_mask"
-
-    def load_mask(self, mask: str):
+    @classmethod
+    def execute(cls, mask: str):
         _strip_prefix(mask, "data:image/png;base64,")
         imgdata = base64.b64decode(mask)
         img = Image.open(BytesIO(imgdata))
@@ -60,22 +67,22 @@ class LoadMaskBase64:
         return (img.unsqueeze(0),)
 
 
-class SendImageWebSocket:
+class SendImageWebSocket(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "images": ("IMAGE",),
-                "format": (["PNG", "JPEG"], {"default": "PNG"}),
-            }
-        }
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_SendImageWebSocket",
+            display_name="Send Image (WebSocket)",
+            category="external_tooling",
+            inputs=[
+                io.Image.Input("images"),
+                io.Combo.Input("format", options=["PNG", "JPEG"], default="PNG"),
+            ],
+            is_output_node=True,
+        )
 
-    RETURN_TYPES = ()
-    FUNCTION = "send_images"
-    OUTPUT_NODE = True
-    CATEGORY = "external_tooling"
-
-    def send_images(self, images, format):
+    @classmethod
+    def execute(cls, images: torch.Tensor, format: str):
         results = []
         for tensor in images:
             array = 255.0 * tensor.cpu().numpy()
@@ -93,43 +100,7 @@ class SendImageWebSocket:
                 "type": "output",
             })
 
-        return {"ui": {"images": results}}
-
-
-class CropImage:
-    """Deprecated, ComfyUI has an ImageCrop node now which does the same."""
-
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "image": ("IMAGE",),
-                "x": (
-                    "INT",
-                    {"default": 0, "min": 0, "max": 8192, "step": 1},
-                ),
-                "y": (
-                    "INT",
-                    {"default": 0, "min": 0, "max": 8192, "step": 1},
-                ),
-                "width": (
-                    "INT",
-                    {"default": 512, "min": 1, "max": 8192, "step": 1},
-                ),
-                "height": (
-                    "INT",
-                    {"default": 512, "min": 1, "max": 8192, "step": 1},
-                ),
-            }
-        }
-
-    CATEGORY = "external_tooling"
-    RETURN_TYPES = ("IMAGE",)
-    FUNCTION = "crop"
-
-    def crop(self, image, x, y, width, height):
-        out = image[:, y : y + height, x : x + width, :]
-        return (out,)
+        return io.NodeOutput(ui={"images": results})
 
 
 def to_bchw(image: torch.Tensor):
@@ -148,21 +119,22 @@ def mask_batch(mask: torch.Tensor):
     return mask
 
 
-class ApplyMaskToImage:
+class ApplyMaskToImage(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "image": ("IMAGE",),
-                "mask": ("MASK",),
-            }
-        }
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_ApplyMaskToImage",
+            display_name="Apply Mask to Image",
+            category="external_tooling",
+            inputs=[
+                io.Image.Input("image"),
+                io.Mask.Input("mask"),
+            ],
+            outputs=[io.Image.Output(display_name="masked")],
+        )
 
-    CATEGORY = "external_tooling"
-    RETURN_TYPES = ("IMAGE",)
-    FUNCTION = "apply_mask"
-
-    def apply_mask(self, image: torch.Tensor, mask: torch.Tensor):
+    @classmethod
+    def execute(cls, image: torch.Tensor, mask: torch.Tensor):
         out = to_bchw(image)
         if out.shape[1] == 3:  # Assuming RGB images
             out = torch.cat([out, torch.ones_like(out[:, :1, :, :])], dim=1)
@@ -189,28 +161,26 @@ class _ReferenceImageData(NamedTuple):
     range: tuple[float, float]
 
 
-class ReferenceImage:
+class ReferenceImage(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "image": ("IMAGE",),
-                "weight": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0}),
-                "range_start": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0}),
-                "range_end": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0}),
-            },
-            "optional": {
-                "reference_images": ("REFERENCE_IMAGE",),
-            },
-        }
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_ReferenceImage",
+            display_name="Reference Image",
+            category="external_tooling",
+            inputs=[
+                io.Image.Input("image"),
+                io.Float.Input("weight", default=1.0, min=0.0, max=10.0),
+                io.Float.Input("range_start", default=0.0, min=0.0, max=1.0),
+                io.Float.Input("range_end", default=1.0, min=0.0, max=1.0),
+                io.Custom("ReferenceImage").Input("reference_images", optional=True),
+            ],
+            outputs=[io.Custom("ReferenceImage").Output(display_name="reference_images")],
+        )
 
-    CATEGORY = "external_tooling"
-    RETURN_TYPES = ("REFERENCE_IMAGE",)
-    RETURN_NAMES = ("reference_images",)
-    FUNCTION = "append"
-
-    def append(
-        self,
+    @classmethod
+    def execute(
+        cls,
         image: torch.Tensor,
         weight: float,
         range_start: float,
@@ -222,24 +192,25 @@ class ReferenceImage:
         return (imgs,)
 
 
-class ApplyReferenceImages:
+class ApplyReferenceImages(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "conditioning": ("CONDITIONING",),
-                "clip_vision": ("CLIP_VISION",),
-                "style_model": ("STYLE_MODEL",),
-                "references": ("REFERENCE_IMAGE",),
-            }
-        }
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_ApplyReferenceImages",
+            display_name="Apply Reference Images",
+            category="external_tooling",
+            inputs=[
+                io.Conditioning.Input("conditioning"),
+                io.ClipVision.Input("clip_vision"),
+                io.StyleModel.Input("style_model"),
+                io.Custom("ReferenceImage").Input("references"),
+            ],
+            outputs=[io.Conditioning.Output(display_name="conditioning")],
+        )
 
-    CATEGORY = "external_tooling"
-    RETURN_TYPES = ("CONDITIONING",)
-    FUNCTION = "apply"
-
-    def apply(
-        self,
+    @classmethod
+    def execute(
+        cls,
         conditioning: list[list],
         clip_vision: ClipVisionModel,
         style_model: StyleModel,

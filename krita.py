@@ -8,6 +8,7 @@ from PIL import Image
 import server
 import comfy.samplers
 from comfy.comfy_types.node_typing import IO
+from comfy_api.latest import io
 from .nodes import SendImageWebSocket
 
 
@@ -72,37 +73,39 @@ class _BasicTypes(str):
 BasicTypes = _BasicTypes("BASIC")
 
 
-class KritaOutput:
+class KritaOutput(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {"required": {"images": ("IMAGE",)}}
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_KritaOutput",
+            display_name="Krita Output",
+            category="krita",
+            inputs=[io.Image.Input("images")],
+            is_output_node=True,
+        )
 
-    RETURN_TYPES = ()
-    FUNCTION = "send_images"
-    OUTPUT_NODE = True
-    CATEGORY = "krita"
-
-    def send_images(self, images):
-        return SendImageWebSocket().send_images(images, "PNG")
-
-
-class KritaSendText:
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "value": (IO.ANY, {}),
-                "name": ("STRING", {"default": "Output"}),
-                "type": (["text", "markdown", "html"], {"default": "text"}),
-            }
-        }
+    def execute(cls, images: torch.Tensor):
+        return SendImageWebSocket.execute(images, "PNG")
 
-    RETURN_TYPES = ()
-    FUNCTION = "send"
-    OUTPUT_NODE = True
-    CATEGORY = "krita"
 
-    def send(self, value: Any, name: str, type: str):
+class KritaSendText(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_KritaSendText",
+            display_name="Send Text",
+            category="krita",
+            inputs=[
+                io.AnyType.Input("value"),
+                io.String.Input("name", default="Output"),
+                io.Combo.Input("type", options=["text", "markdown", "html"], default="text"),
+            ],
+            is_output_node=True,
+        )
+
+    @classmethod
+    def execute(cls, value: Any, name: str, type: str):
         mime = {
             "text": "text/plain",
             "markdown": "text/markdown",
@@ -115,72 +118,79 @@ class KritaSendText:
             except Exception as e:
                 text = f"Could not convert to text: {e}"
 
-        print(f"Sending text: {name} = {text}")
-        return {"ui": {"text": [{"name": name, "text": text, "content-type": mime}]}}
+        return io.NodeOutput(ui={"text": [{"name": name, "text": text, "content-type": mime}]})
 
 
-class KritaCanvas:
+class KritaCanvas(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {}
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_KritaCanvas",
+            display_name="Krita Canvas",
+            category="krita",
+            outputs=[
+                io.Image.Output(display_name="image"),
+                io.Int.Output(display_name="width"),
+                io.Int.Output(display_name="height"),
+                io.Int.Output(display_name="seed"),
+            ],
+        )
 
-    RETURN_TYPES = ("IMAGE", "INT", "INT", "INT")
-    RETURN_NAMES = ("image", "width", "height", "seed")
-    FUNCTION = "placeholder"
-    CATEGORY = "krita"
-
-    def placeholder(self):
-        return (_placeholder_image(), 512, 512, 0)
-
-
-class KritaSelection:
     @classmethod
-    def INPUT_TYPES(cls):
-        return {}
-
-    RETURN_TYPES = (IO.MASK, IO.BOOLEAN)
-    RETURN_NAMES = ("mask", "active")
-    FUNCTION = "placeholder"
-    CATEGORY = "krita"
-
-    def placeholder(self):
-        return (torch.ones(1, 512, 512), False)
+    def execute(cls):
+        return io.NodeOutput(_placeholder_image(), 512, 512, 0)
 
 
-class KritaImageLayer:
+class KritaSelection(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "name": ("STRING", {"default": "Image"}),
-            }
-        }
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_KritaSelection",
+            display_name="Krita Selection",
+            category="krita",
+            outputs=[io.Mask.Output(display_name="mask"), io.Boolean.Output(display_name="active")],
+        )
 
-    RETURN_TYPES = ("IMAGE", "MASK")
-    RETURN_NAMES = ("image", "mask")
-    FUNCTION = "placeholder"
-    CATEGORY = "krita"
-
-    def placeholder(self, name: str):
-        return (_placeholder_image(), torch.ones(1, 512, 512))
-
-
-class KritaMaskLayer:
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "name": ("STRING", {"default": "Mask"}),
-            }
-        }
+    def execute(cls):
+        return io.NodeOutput(torch.ones(1, 512, 512), False)
 
-    RETURN_TYPES = ("MASK",)
-    RETURN_NAMES = ("mask",)
-    FUNCTION = "placeholder"
-    CATEGORY = "krita"
 
-    def placeholder(self, name: str):
-        return (torch.ones(1, 512, 512),)
+class KritaImageLayer(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_KritaImageLayer",
+            display_name="Krita Image Layer",
+            category="krita",
+            inputs=[io.String.Input("name", default="Image")],
+            outputs=[
+                io.Image.Output(display_name="image"),
+                io.Mask.Output(display_name="mask"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, name: str):
+        return io.NodeOutput(_placeholder_image(), torch.ones(1, 512, 512))
+
+
+class KritaMaskLayer(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_KritaMaskLayer",
+            display_name="Krita Mask Layer",
+            category="krita",
+            inputs=[io.String.Input("name", default="Mask")],
+            outputs=[
+                io.Mask.Output(display_name="mask"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, name: str):
+        return io.NodeOutput(torch.ones(1, 512, 512))
 
 
 _param_types = [
@@ -193,71 +203,63 @@ _param_types = [
     "prompt (positive)",
     "prompt (negative)",
 ]
-_any_float = {"default": 0.0, "min": -sys.float_info.max, "max": sys.float_info.max}
+_fmax = sys.float_info.max
 
 
-class Parameter:
+class Parameter(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "name": ("STRING", {"default": "Parameter"}),
-                "type": (_param_types, {"default": "auto"}),
-                "default": ("STRING", {"default": ""}),
-            },
-            "optional": {
-                "min": ("FLOAT", _any_float),
-                "max": ("FLOAT", _any_float),
-            },
-        }
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_Parameter",
+            display_name="Parameter",
+            category="krita",
+            inputs=[
+                io.String.Input("name", default="Parameter"),
+                io.Combo.Input("type", options=_param_types, default="auto"),
+                io.String.Input("default", default=""),
+                io.Float.Input("min", default=0.0, min=-_fmax, max=_fmax, optional=True),
+                io.Float.Input("max", default=1.0, min=-_fmax, max=_fmax, optional=True),
+            ],
+            outputs=[io.AnyType.Output(display_name="value")],
+        )
 
-    RETURN_TYPES = (BasicTypes,)
-    RETURN_NAMES = ("value",)
-    FUNCTION = "placeholder"
-    CATEGORY = "krita"
-
-    def placeholder(self, name: str, type: str, default, min=0.0, max=1.0):
+    @classmethod
+    def execute(cls, name: str, type: str, default, min=0.0, max=1.0):
         if type == "number":
-            return (float(default),)
+            return io.NodeOutput(float(default))
         elif type == "number (integer)":
-            return (int(default),)
-        return (default,)
+            return io.NodeOutput(int(default))
+        return io.NodeOutput(default)
 
 
-class KritaStyle:
+class KritaStyle(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "name": ("STRING", {"default": "Style"}),
-                "sampler_preset": (["auto", "regular", "live"],),
-            }
-        }
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_KritaStyle",
+            display_name="Krita Style",
+            category="krita",
+            inputs=[
+                io.String.Input("name", default="Style"),
+                io.Combo.Input("sampler_preset", options=["auto", "regular", "live"]),
+            ],
+            outputs=[
+                io.Model.Output(display_name="model"),
+                io.Clip.Output(display_name="clip"),
+                io.Vae.Output(display_name="vae"),
+                io.String.Output(display_name="positive prompt"),
+                io.String.Output(display_name="negative prompt"),
+                io.Combo.Output(
+                    display_name="sampler name", options=comfy.samplers.KSampler.SAMPLERS
+                ),
+                io.Combo.Output(
+                    display_name="scheduler", options=comfy.samplers.KSampler.SCHEDULERS
+                ),
+                io.Int.Output(display_name="steps"),
+                io.Float.Output(display_name="guidance"),
+            ],
+        )
 
-    RETURN_TYPES = (
-        "MODEL",
-        "CLIP",
-        "VAE",
-        "STRING",
-        "STRING",
-        comfy.samplers.KSampler.SAMPLERS,
-        comfy.samplers.KSampler.SCHEDULERS,
-        "INT",
-        "FLOAT",
-    )
-    RETURN_NAMES = (
-        "model",
-        "clip",
-        "vae",
-        "positive prompt",
-        "negative prompt",
-        "sampler name",
-        "scheduler",
-        "steps",
-        "guidance",
-    )
-    FUNCTION = "placeholder"
-    CATEGORY = "krita"
-
-    def placeholder(self, name: str, sampler_preset: str):
+    @classmethod
+    def execute(cls, name: str, sampler_preset: str):
         raise NotImplementedError("This workflow must be started from Krita!")

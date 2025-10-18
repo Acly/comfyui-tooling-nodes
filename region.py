@@ -8,6 +8,7 @@ import torch.nn.functional as F
 import math
 from torch import Tensor, Size
 from comfy.model_patcher import ModelPatcher
+from comfy_api.latest import io
 
 
 def downsample_mask(mask: Tensor, batch: int, target_size: int, original_shape: Size) -> Tensor:
@@ -65,74 +66,82 @@ class Region(NamedTuple):
         return result
 
 
-class BackgroundRegion:
+Regions = io.Custom("Regions")
+
+
+class BackgroundRegion(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {"required": {"conditioning": ("CONDITIONING",)}}
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_BackgroundRegion",
+            display_name="Background Region",
+            category="external_tooling/regions",
+            inputs=[io.Conditioning.Input("conditioning")],
+            outputs=[Regions.Output(display_name="regions")],
+        )
 
-    CATEGORY = "external_tooling/regions"
-    RETURN_TYPES = ("REGIONS",)
-    FUNCTION = "define"
-
-    def define(self, conditioning: list):
+    @classmethod
+    def execute(cls, conditioning: list):
         return (Region(None, None, conditioning),)
 
 
-class DefineRegion:
+class DefineRegion(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "mask": ("MASK",),
-                "conditioning": ("CONDITIONING",),
-            },
-            "optional": {
-                "regions": ("REGIONS",),
-            },
-        }
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_DefineRegion",
+            display_name="Define Region",
+            category="external_tooling/regions",
+            inputs=[
+                io.Mask.Input("mask"),
+                io.Conditioning.Input("conditioning"),
+                Regions.Input("regions", optional=True),
+            ],
+            outputs=[Regions.Output(display_name="regions")],
+        )
 
-    CATEGORY = "external_tooling/regions"
-    RETURN_TYPES = ("REGIONS",)
-    FUNCTION = "define"
-
-    def define(self, mask: Tensor, conditioning: list, regions: Region | None = None):
+    @classmethod
+    def execute(cls, mask: Tensor, conditioning: list, regions: Region | None = None):
         if mask.dim() < 3:
             mask = mask.unsqueeze(0)
-        return (Region(regions, mask, conditioning),)
+        return io.NodeOutput(Region(regions, mask, conditioning))
 
 
-class ListRegionMasks:
+class ListRegionMasks(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {"required": {"regions": ("REGIONS",)}}
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_ListRegionMasks",
+            display_name="List Region Masks",
+            category="external_tooling/regions",
+            inputs=[Regions.Input("regions")],
+            outputs=[io.Mask.Output(display_name="masks")],
+        )
 
-    CATEGORY = "external_tooling/regions"
-    RETURN_TYPES = ("MASK",)
-    FUNCTION = "get_masks"
-
-    def get_masks(self, regions: Region):
-        return (torch.stack([r.mask for r in regions.preprocess()], dim=0),)
-
-
-class AttentionMask:
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "model": ("MODEL",),
-                "regions": ("REGIONS",),
-            }
-        }
+    def execute(cls, regions: Region):
+        return io.NodeOutput(torch.stack([r.mask for r in regions.preprocess()], dim=0))
 
-    RETURN_TYPES = ("MODEL",)
-    FUNCTION = "attention_mask"
-    CATEGORY = "external_tooling/regions"
 
-    mask: Tensor
-    conds: list[Tensor]
-    batch_size: int
+class AttentionMask(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_AttentionMask",
+            display_name="Regions Attention Mask",
+            category="external_tooling/regions",
+            inputs=[io.Model.Input("model"), Regions.Input("regions")],
+            outputs=[io.Model.Output(display_name="model")],
+        )
 
-    def attention_mask(self, model: ModelPatcher, regions: Region):
+    @classmethod
+    def execute(cls, model: ModelPatcher, regions: Region):
+        AttentionMaskPatch(model, regions)
+        return io.NodeOutput(model)
+
+
+class AttentionMaskPatch:
+    def __init__(self, model: ModelPatcher, regions: Region):
         new_model = model.clone()
         region_list = regions.preprocess()
         num_conds = len(region_list)
@@ -208,4 +217,3 @@ class AttentionMask:
 
         new_model.set_model_attn2_patch(attn2_patch)
         new_model.set_model_attn2_output_patch(attn2_output_patch)
-        return (new_model,)
