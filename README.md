@@ -33,7 +33,7 @@ Loads a mask (single channel) from a PNG embedded into the prompt as base64 stri
 ### Send Image (WebSocket)
 
 Sends an output image over the client WebSocket connection as PNG binary data.
-* Inputs: the image (RGB or RGBA)
+* Inputs: the image (RGB or RGBA), supports batches
 
 This will first send one binary message for each image in the batch via WebSocket:
 ```
@@ -43,6 +43,32 @@ That is two 32-bit integers (big endian) with values 1 and 2 followed by the PNG
 ```
 {'type': 'executed', 'data': {'node': '<node ID>', 'output': {'images': [{'source': 'websocket', 'content-type': 'image/png', 'type': 'output'}, ...]}, 'prompt_id': '<prompt ID>}}
 ```
+
+### Send Image (HTTP)
+
+Stores an output image in RAM temporarily and allows retrieval over HTTP.
+This is typically faster than WebSocket, especially for large images.
+* Inputs: the image (RGB or RGBA), supports batches
+
+This node will send a JSON message over WebSocket when an image is ready:
+```json
+{
+  'type': 'executed',
+  'data': {
+    'node': '<node ID>',
+    'output': {
+      'images': [
+        {'source': 'http', 'id': '<image ID>', 'content-type': 'image/png', 'type': 'output'}
+      ]
+    },
+    'prompt_id': 'prompt ID'
+  }
+}
+```
+
+To download the images, send a HTTP GET request to `/api/etn/image/{id}` with the image IDs from the message.
+Images will be cached for a few minutes.
+
 
 ## <a id="regions" href="#toc">Regions</a>
 

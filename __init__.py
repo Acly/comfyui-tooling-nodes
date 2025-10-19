@@ -8,6 +8,7 @@ class ExternalToolingNodes(ComfyExtension):
             nodes.LoadImageBase64,
             nodes.LoadMaskBase64,
             nodes.SendImageWebSocket,
+            nodes.SendImageHTTP,
             nodes.ApplyMaskToImage,
             nodes.ReferenceImage,
             nodes.ApplyReferenceImages,

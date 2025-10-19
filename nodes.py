@@ -1,6 +1,9 @@
 from __future__ import annotations
 from copy import copy
+from dataclasses import dataclass
+import time
 from typing import NamedTuple
+from uuid import uuid4
 from PIL import Image
 import numpy as np
 import base64
@@ -100,6 +103,84 @@ class SendImageWebSocket(io.ComfyNode):
                 "type": "output",
             })
 
+        return io.NodeOutput(ui={"images": results})
+
+
+class ImageCache:
+    @dataclass
+    class Entry:
+        data: bytes
+        content_type: str
+        timestamp: float
+        retrieved: int
+
+    def __init__(self):
+        self.images: dict[str, ImageCache.Entry] = {}
+
+    def add(self, image: Image.Image, format: str):
+        key = uuid4().hex
+        with BytesIO() as output:
+            image.save(output, format=format, quality=95, compress_level=1)
+            image_data = output.getvalue()
+
+        self.images[key] = ImageCache.Entry(
+            data=image_data,
+            content_type=f"image/{format.lower()}",
+            timestamp=time.time(),
+            retrieved=0,
+        )
+        return key
+
+    def get(self, key: str):
+        entry = self.images.get(key)
+        if entry is None:
+            return None, None
+        self.prune()
+        entry.retrieved += 1
+        return entry.data, entry.content_type
+
+    def prune(self):
+        now = time.time()
+        keys_to_delete = []
+        for key, entry in self.images.items():
+            d = now - entry.timestamp
+            if (d > 60 and entry.retrieved > 1) or d > 600:
+                keys_to_delete.append(key)
+        for key in keys_to_delete:
+            del self.images[key]
+
+
+image_cache = ImageCache()
+
+
+class SendImageHTTP(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_SendImageHTTP",
+            display_name="Send Image (HTTP)",
+            category="external_tooling",
+            inputs=[
+                io.Image.Input("images"),
+                io.Combo.Input("format", options=["PNG", "JPEG"], default="PNG"),
+            ],
+            is_output_node=True,
+        )
+
+    @classmethod
+    def execute(cls, images: torch.Tensor, format: str):
+        results = []
+        for tensor in images:
+            array = 255.0 * tensor.cpu().numpy()
+            image = Image.fromarray(np.clip(array, 0, 255).astype(np.uint8))
+            key = image_cache.add(image, format)
+
+            results.append({
+                "source": "http",
+                "id": key,
+                "content-type": f"image/{format.lower()}",
+                "type": "output",
+            })
         return io.NodeOutput(ui={"images": results})
 
 
