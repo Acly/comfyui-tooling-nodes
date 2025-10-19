@@ -136,42 +136,42 @@ class AttentionMask(io.ComfyNode):
 
     @classmethod
     def execute(cls, model: ModelPatcher, regions: Region):
-        AttentionMaskPatch(model, regions)
-        return io.NodeOutput(model)
+        return io.NodeOutput(AttentionMaskPatch.apply(model, regions))
 
 
 class AttentionMaskPatch:
-    def __init__(self, model: ModelPatcher, regions: Region):
-        new_model = model.clone()
-        region_list = regions.preprocess()
-        num_conds = len(region_list)
-
+    def __init__(self, region_list: list[Region]):
         mask = torch.stack([r.mask for r in region_list], dim=0)
         mask_sum = mask.sum(dim=0, keepdim=True)
         assert mask_sum.sum() > 0, "There are areas that are zero in all masks."
         self.mask = mask / mask_sum
-
         self.conds = [r.conditioning[0][0] for r in region_list]
-        num_tokens = [cond.shape[1] for cond in self.conds]
+        self.num_tokens = [cond.shape[1] for cond in self.conds]
+        self.num_conds = len(region_list)
+        self.batch_size = 0
+
+    @staticmethod
+    def apply(model: ModelPatcher, regions: Region):
+        patch = AttentionMaskPatch(regions.preprocess())
 
         def attn2_patch(q: Tensor, k: Tensor, v: Tensor, extra_options: dict):
             assert k.mean() == v.mean(), "k and v must be the same."
             device, dtype = q.device, q.dtype
 
-            if self.conds[0].device != device or self.conds[0].dtype != dtype:
-                self.conds = [cond.to(device, dtype=dtype) for cond in self.conds]
-            if self.mask.device != device or self.mask.dtype != dtype:
-                self.mask = self.mask.to(device, dtype=dtype)
+            if patch.conds[0].device != device or patch.conds[0].dtype != dtype:
+                patch.conds = [cond.to(device, dtype=dtype) for cond in patch.conds]
+            if patch.mask.device != device or patch.mask.dtype != dtype:
+                patch.mask = patch.mask.to(device, dtype=dtype)
 
             cond_or_unconds = extra_options["cond_or_uncond"]
             num_chunks = len(cond_or_unconds)
-            self.batch_size = q.shape[0] // num_chunks
+            patch.batch_size = q.shape[0] // num_chunks
             q_chunks = q.chunk(num_chunks, dim=0)
             k_chunks = k.chunk(num_chunks, dim=0)
-            lcm_tokens = lcm_for_list(num_tokens + [k.shape[1]])
+            lcm_tokens = lcm_for_list(patch.num_tokens + [k.shape[1]])
             conds_tensor = [
-                cond.repeat(self.batch_size, lcm_tokens // num_tokens[i], 1)
-                for i, cond in enumerate(self.conds)
+                cond.repeat(patch.batch_size, lcm_tokens // patch.num_tokens[i], 1)
+                for i, cond in enumerate(patch.conds)
             ]
             conds_tensor = torch.cat(conds_tensor, dim=0)
 
@@ -182,9 +182,9 @@ class AttentionMaskPatch:
                     qs.insert(0, q_chunks[i])
                     ks.insert(0, k_target)
                 else:
-                    qs.insert(0, q_chunks[i].repeat(num_conds, 1, 1))
+                    qs.insert(0, q_chunks[i].repeat(patch.num_conds, 1, 1))
                     ks.insert(0, conds_tensor)
-                    for _ in range(num_conds - 1):
+                    for _ in range(patch.num_conds - 1):
                         cond_or_unconds.insert(i, 0)
 
             qs = torch.cat(qs, dim=0)
@@ -192,28 +192,32 @@ class AttentionMaskPatch:
             return qs, ks, ks
 
         def attn2_output_patch(out: Tensor, extra_options: dict):
+            num_conds = patch.num_conds
             cond_or_unconds = extra_options["cond_or_uncond"]
             mask_downsample = downsample_mask(
-                self.mask, self.batch_size, out.shape[1], extra_options["original_shape"]
+                patch.mask, patch.batch_size, out.shape[1], extra_options["original_shape"]
             )
             outputs: list[Tensor] = []
             pos = 0
             i = 0
             while i < len(cond_or_unconds):
                 if cond_or_unconds[i] == 1:  # uncond
-                    outputs.append(out[pos : pos + self.batch_size])
-                    pos += self.batch_size
+                    outputs.append(out[pos : pos + patch.batch_size])
+                    pos += patch.batch_size
                 else:
-                    masked = out[pos : pos + num_conds * self.batch_size] * mask_downsample
-                    masked = masked.view(num_conds, self.batch_size, out.shape[1], out.shape[2])
+                    masked = out[pos : pos + num_conds * patch.batch_size] * mask_downsample
+                    masked = masked.view(num_conds, patch.batch_size, out.shape[1], out.shape[2])
                     masked = masked.sum(dim=0)
                     outputs.append(masked)
-                    pos += num_conds * self.batch_size
+                    pos += num_conds * patch.batch_size
                     for _ in range(num_conds - 1):
                         cond_or_unconds.pop(i)
                 i += 1
 
             return torch.cat(outputs, dim=0)
 
+        new_model = model.clone()
         new_model.set_model_attn2_patch(attn2_patch)
         new_model.set_model_attn2_output_patch(attn2_output_patch)
+        new_model.set_attachments("etn_attention_mask", patch)
+        return new_model
