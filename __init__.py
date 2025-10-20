@@ -5,10 +5,11 @@ from . import api as api, nodes, tile, region, nsfw, translation, krita
 class ExternalToolingNodes(ComfyExtension):
     async def get_node_list(self) -> list[type[io.ComfyNode]]:
         return [
+            nodes.LoadImageCache,
+            nodes.SaveImageCache,
             nodes.LoadImageBase64,
             nodes.LoadMaskBase64,
             nodes.SendImageWebSocket,
-            nodes.SendImageHTTP,
             nodes.ApplyMaskToImage,
             nodes.ReferenceImage,
             nodes.ApplyReferenceImages,
