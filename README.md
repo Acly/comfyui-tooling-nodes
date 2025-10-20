@@ -44,11 +44,26 @@ That is two 32-bit integers (big endian) with values 1 and 2 followed by the PNG
 {'type': 'executed', 'data': {'node': '<node ID>', 'output': {'images': [{'source': 'websocket', 'content-type': 'image/png', 'type': 'output'}, ...]}, 'prompt_id': '<prompt ID>}}
 ```
 
-### Send Image (HTTP)
+### Load Image from Cache
+
+Loads an image or mask that has been uploaded previously into the workflow.
+Uploaded images are temporarily stored in RAM rather than written to disk. This
+method has less overhead compared to embedding images as base64 into the prompt,
+but is more complex to implement.
+* Inputs: id of an image that was uploaded previously
+* Outputs: image (RGB) and mask (A of RGBA input, or first channel if no alpha present).
+
+To upload an image, upload the _bytes_ of a PNG via a HTTP PUT request to
+`/api/etn/image/{id}`. JPEG or other formats also work. Choose any `id` which
+does not clash with other images you upload, and reference it in the node. The
+request returns `201` if the image was uploaded and `200` if it was already
+cached.
+
+### Save Image to Cache
 
 Stores an output image in RAM temporarily and allows retrieval over HTTP.
 This is typically faster than WebSocket, especially for large images.
-* Inputs: the image (RGB or RGBA), supports batches
+* Inputs: the image (RGB or RGBA). Batches are supported.
 
 This node will send a JSON message over WebSocket when an image is ready:
 ```json
@@ -66,8 +81,8 @@ This node will send a JSON message over WebSocket when an image is ready:
 }
 ```
 
-To download the images, send a HTTP GET request to `/api/etn/image/{id}` with the image IDs from the message.
-Images will be cached for a few minutes.
+To download the images, send a HTTP GET request to `/api/etn/image/{id}` with
+the image IDs from the message. Images will be cached for a few minutes.
 
 
 ## <a id="regions" href="#toc">Regions</a>

@@ -123,20 +123,25 @@ class ImageCache:
             image.save(output, format=format, quality=95, compress_level=1)
             image_data = output.getvalue()
 
+        self.insert(key, image_data, f"image/{format.lower()}")
+        return key
+
+    def insert(self, key: str, data: bytes, content_type: str):
         self.images[key] = ImageCache.Entry(
-            data=image_data,
-            content_type=f"image/{format.lower()}",
+            data=data,
+            content_type=content_type,
             timestamp=time.time(),
             retrieved=0,
         )
-        return key
 
-    def get(self, key: str):
+    def get(self, key: str, extend: bool = False):
         entry = self.images.get(key)
         if entry is None:
             return None, None
-        self.prune()
         entry.retrieved += 1
+        if extend:
+            entry.timestamp = time.time()
+        self.prune()
         return entry.data, entry.content_type
 
     def prune(self):
@@ -149,16 +154,55 @@ class ImageCache:
         for key in keys_to_delete:
             del self.images[key]
 
+    def __contains__(self, key: str):
+        return key in self.images
+
 
 image_cache = ImageCache()
 
 
-class SendImageHTTP(io.ComfyNode):
+class LoadImageCache(io.ComfyNode):
     @classmethod
     def define_schema(cls):
         return io.Schema(
-            node_id="ETN_SendImageHTTP",
-            display_name="Send Image (HTTP)",
+            node_id="ETN_LoadImageCache",
+            display_name="Load Image from Cache",
+            category="external_tooling",
+            inputs=[io.String.Input("id", multiline=False)],
+            outputs=[io.Image.Output(display_name="image"), io.Mask.Output(display_name="mask")],
+        )
+
+    @classmethod
+    def execute(cls, id: str):
+        image_data, content_type = image_cache.get(id, extend=True)
+        if image_data is None:
+            raise ValueError(f"Image with ID {id} not found in cache.")
+
+        img = Image.open(BytesIO(image_data))
+        w, h = img.size
+        c = len(img.getbands())
+        normalized = np.array(img).astype(np.float32) / 255.0
+        tensor = torch.from_numpy(normalized).reshape(1, h, w, c)
+        match c:
+            case 1:
+                image = tensor.expand(1, h, w, 3)
+                mask = tensor.reshape(1, h, w)
+            case 3:
+                image = tensor
+                mask = tensor[..., 0]
+            case 4:
+                image = tensor[..., :3]
+                mask = tensor[..., 3]
+
+        return io.NodeOutput(image, mask)
+
+
+class SaveImageCache(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_SaveImageCache",
+            display_name="Save Image to Cache",
             category="external_tooling",
             inputs=[
                 io.Image.Input("images"),

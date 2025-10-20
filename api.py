@@ -301,6 +301,23 @@ if _server is not None:
         except Exception as e:
             return web.json_response(dict(error=str(e)), status=500)
 
+    @_server.routes.put("/api/etn/image/{id}")
+    async def put_image(request: web.Request):
+        try:
+            id = request.match_info.get("id", "")
+            if id in image_cache:
+                return web.json_response(dict(status="cached"), status=200)
+
+            content_type = request.headers.get("Content-Type", "application/octet-stream")
+            data = bytearray()
+            async for chunk, _ in request.content.iter_chunks():
+                data.extend(chunk)
+
+            image_cache.insert(id, bytes(data), content_type)
+            return web.json_response(dict(status="success"), status=201)
+        except Exception as e:
+            return web.json_response(dict(error=str(e)), status=500)
+
     @_server.routes.put("/api/etn/upload/{folder_name}/{filename}")
     async def upload(request: web.Request):
         folder_name = request.match_info.get("folder_name", "")
