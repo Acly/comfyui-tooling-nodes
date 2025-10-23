@@ -205,17 +205,22 @@ def inspect_diffusion_model(filename: str, model_type: str, is_checkpoint: bool)
     return inspect_safetensors(filename, model_type, is_checkpoint)
 
 
-def inspect_models(model_type: str):
+def inspect_models(model_type: str, params: dict[str, str]):
     try:
         try:
             files = folder_paths.get_filename_list(model_type)
         except KeyError:
             return web.json_response({"error": f"Model folder not found: {model_type}"})
+        limit = int(params.get("limit", "1000"))
+        offset = int(params.get("offset", "0"))
+        files_range = files[offset : offset + limit]
         is_checkpoint = model_type == "checkpoints"
         info = {
             filename: inspect_diffusion_model(filename, model_type, is_checkpoint)
-            for filename in files
+            for filename in files_range
         }
+        if "limit" in params:
+            info["_meta"] = dict(offset=offset, count=len(files_range), total=len(files))
         return web.json_response(info)
     except Exception as e:
         traceback.print_exc()
@@ -261,7 +266,7 @@ if _server is not None:
         error = has_invalid_folder_name(folder_name)
         if error is not None:
             return error
-        return inspect_models(folder_name)
+        return inspect_models(folder_name, request.rel_url.query)
 
     @_server.routes.get("/api/etn/model_info")
     async def api_model_info(request):
