@@ -68,15 +68,15 @@ This is typically faster than WebSocket, especially for large images.
 This node will send a JSON message over WebSocket when an image is ready:
 ```json
 {
-  'type': 'executed',
-  'data': {
-    'node': '<node ID>',
-    'output': {
-      'images': [
-        {'source': 'http', 'id': '<image ID>', 'content-type': 'image/png', 'type': 'output'}
+  "type": "executed",
+  "data": {
+    "node": "<node ID>",
+    "output": {
+      "images": [
+        {"source": "http", "id": "<image ID>", "content-type": "image/png", "type": "output"}
       ]
     },
-    'prompt_id': 'prompt ID'
+    "prompt_id": "prompt ID"
   }
 }
 ```
@@ -205,6 +205,8 @@ There are various types of models that can be loaded as checkpoint, LoRA, Contro
 #### Paramters
 * `folder_name`: sub-directory in ComfyUI's models folder.
   Supported model types: `checkpoints`, `diffusion_models`, `unet`, `unet_gguf`
+* `limit=n`: (query parameter, optional) inspect at `n` models
+* `offset=i`: (query parameter, optional) start with the `i`th model
 
 #### Output
 Lists available models with additional classification info:
@@ -227,6 +229,24 @@ Detection supports quantized models:
 * Nunchaku: SVDQuant models are detected and will set the `quant` field to `svdq`
 
 Returns an entry `{"base_model": "unknown"}` for models with unknown format or which do not match any of the known base models.
+
+
+#### Pagination
+The query parameters limit and offset allow inspecting a subset of models per request.
+Usually inspection is quite fast (it only looks at model headers), but it can be slow
+in some cases due to anti-virus or slow harddrives.
+```
+GET /api/etn/model_info/checkpoints?limit=10&offset=20
+```
+This will return at most 10 models, starting with the 20th model in the list.
+It also returns a special `_meta` entry in the output JSON:
+```json
+{
+    "checkpoint_20.safetensors": { ... },
+    "_meta": { "offset": 20, "count": 1, "total": 21 }
+}
+```
+
 
 ### GET /api/etn/languages
 
