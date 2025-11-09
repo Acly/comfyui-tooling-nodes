@@ -107,6 +107,9 @@ class SendImageWebSocket(io.ComfyNode):
 
 
 class ImageCache:
+    timeout = 600  # 10 minutes
+    max_size = 100 * 1024 * 1024  # 100 MB
+
     @dataclass
     class Entry:
         data: bytes
@@ -114,8 +117,15 @@ class ImageCache:
         timestamp: float
         retrieved: int
 
+    class OldEntry(NamedTuple):
+        last_used: float
+        deleted: float
+        size: int
+        retrieved: int
+
     def __init__(self):
         self.images: dict[str, ImageCache.Entry] = {}
+        self.old: dict[str, ImageCache.OldEntry] = {}
 
     def add(self, image: Image.Image, format: str):
         key = uuid4().hex
@@ -137,6 +147,13 @@ class ImageCache:
     def get(self, key: str, extend: bool = False):
         entry = self.images.get(key)
         if entry is None:
+            if old := self.old.get(key):
+                now = time.time()
+                print(
+                    f"[comfyui-tooling-nodes] requested image {key} has been deleted ",
+                    f"(last used {now - old.last_used:.0f}s ago, deleted {now - old.deleted:.0f}s ago, "
+                    f"size {old.size / 1024**2:.1f}MB, retrieved {old.retrieved} times)",
+                )
             return None, None
         entry.retrieved += 1
         if extend:
@@ -145,14 +162,22 @@ class ImageCache:
         return entry.data, entry.content_type
 
     def prune(self):
+        total_size = sum(len(entry.data) for entry in self.images.values())
+        if total_size <= self.max_size:
+            return
+        # Remove least recently used entries until under max size
+        sorted_entries = sorted(self.images.items(), key=lambda item: item[1].timestamp)
         now = time.time()
-        keys_to_delete = []
-        for key, entry in self.images.items():
-            d = now - entry.timestamp
-            if (d > 60 and entry.retrieved > 1) or d > 600:
-                keys_to_delete.append(key)
-        for key in keys_to_delete:
-            del self.images[key]
+        for key, entry in sorted_entries:
+            age = now - entry.timestamp
+            if age > self.timeout or (age > 60 and entry.retrieved > 0):
+                self.old[key] = ImageCache.OldEntry(
+                    entry.timestamp, now, len(entry.data), entry.retrieved
+                )
+                del self.images[key]
+                total_size -= len(entry.data)
+                if total_size <= self.max_size:
+                    break
 
     def __contains__(self, key: str):
         return key in self.images
