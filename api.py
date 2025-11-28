@@ -44,6 +44,8 @@ model_names = {
     "CosmosI2V": "cosmos",
     "CosmosT2IPredict2": "cosmos-predict2",
     "CosmosI2VPredict2": "cosmos-predict2",
+    "ZImage": "z-image",
+    "Lumina2": "lumina2",
     "WAN21_T2V": "wan21",
     "WAN21_I2V": "wan21",
     "WAN21_FunControl2V": "wan21-fun",
@@ -54,6 +56,7 @@ model_names = {
     "ACEStep": "ace-step",
     "Omnigen2": "omnigen2",
     "QwenImage": "qwen-image",
+    "Flux2": "flux2",
 }
 
 gguf_architectures = {
