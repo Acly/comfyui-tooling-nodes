@@ -1,6 +1,6 @@
 from __future__ import annotations
 from aiohttp import web
-from typing import NamedTuple
+from typing import Any, NamedTuple
 from pathlib import Path
 import json
 import traceback
@@ -126,7 +126,7 @@ def inspect_safetensors(filename: str, model_type: str, is_checkpoint: bool):
                 return {"base_model": "unknown"}
 
             base_model_name = model_names.get(raw_name, "unknown")
-            result = {"base_model": base_model_name}
+            result: dict[str, Any] = {"base_model": base_model_name}
             result["is_inpaint"] = (
                 base_model_name in ["sd15", "sdxl"] and input_count > 4
             ) or raw_name == "FluxInpaint"
@@ -171,6 +171,9 @@ def inspect_gguf(filename: str, model_type: str):
 
     try:
         path = folder_paths.get_full_path(model_type, filename)
+        if path is None:
+            raise Exception(f"Could not find full path for {model_type}/{filename}")
+
         reader = gguf.GGUFReader(path)
         arch_field = reader.get_field("general.architecture")
         if arch_field is not None:
@@ -181,19 +184,29 @@ def inspect_gguf(filename: str, model_type: str):
             arch_str = str(arch_field.parts[arch_field.data[-1]], encoding="utf-8")
         else:  # stable-diffusion.cpp, requires conversion. not handled for now
             return {"base_model": "flux", "is_inpaint": False}
+
+        # Detect Chroma (modified Flux)
         if arch_str == "flux" and any(
             t.name.startswith("distilled_guidance_layer")
             for t in itertools.islice(reader.tensors, 5)
         ):
             arch_str = "chroma"
 
+        # Detect Z-Image (modified Lumina2)
+        if arch_str == "lumina2":
+            for t in reader.tensors:
+                if t.name == "cap_embedder.1.bias" and t.shape[0] == 3840:
+                    arch_str = "z-image"
+                    break
+
         result = {
             "base_model": gguf_architectures.get(arch_str, arch_str),
             "is_inpaint": False,
         }
         try:
-            result["quant"] = reader.get_field("general.file_type").lower()
-        except Exception as e:
+            if file_type := reader.get_field("general.file_type"):
+                result["quant"] = file_type.contents().lower()
+        except Exception:
             result["quant"] = "gguf"
         return result
 
@@ -273,7 +286,7 @@ if _server is not None:
 
     @_server.routes.get("/api/etn/model_info")
     async def api_model_info(request):
-        return inspect_models("checkpoints")
+        return inspect_models("checkpoints", request.rel_url.query)
 
     @_server.routes.get("/api/etn/languages")
     async def languages(request):
