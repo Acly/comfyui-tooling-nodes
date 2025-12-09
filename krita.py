@@ -1,4 +1,5 @@
 import sys
+import json
 import torch
 import numpy as np
 from pathlib import Path
@@ -139,6 +140,41 @@ class KritaCanvas(io.ComfyNode):
     @classmethod
     def execute(cls):
         return io.NodeOutput(_placeholder_image(), 512, 512, 0)
+
+
+class KritaCanvasResize(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_KritaCanvasResize",
+            display_name="Krita Canvas Resize",
+            category="krita",
+            inputs=[
+                io.Int.Input("width", default=1024),
+                io.Int.Input("height", default=1024),
+            ],
+            is_output_node=True,
+        )
+
+    @classmethod
+    def execute(cls, width: int, height: int):
+        payload = {
+            "action": "resize_canvas",
+            "width": int(width),
+            "height": int(height),
+        }
+
+        return io.NodeOutput(
+            ui={
+                "text": [
+                    {
+                        "name": "Krita Canvas Resize",
+                        "text": json.dumps(payload),
+                        "content-type": "application/x-krita-command",
+                    }
+                ]
+            }
+        )
 
 
 class KritaSelection(io.ComfyNode):
