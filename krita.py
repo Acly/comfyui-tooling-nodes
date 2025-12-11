@@ -81,13 +81,42 @@ class KritaOutput(io.ComfyNode):
             node_id="ETN_KritaOutput",
             display_name="Krita Output",
             category="krita",
-            inputs=[io.Image.Input("images")],
+            inputs=[
+                io.Image.Input("images"),
+                io.Int.Input("width", default=0, min=0, optional=True),
+                io.Int.Input("height", default=0, min=0, optional=True),
+            ],
             is_output_node=True,
         )
 
     @classmethod
-    def execute(cls, images: torch.Tensor):
-        return SendImageWebSocket.execute(images, "PNG")
+    def execute(cls, images: torch.Tensor, width: int = 0, height: int = 0):
+        # First, send images over WebSocket and get the default UI payload.
+        result = SendImageWebSocket.execute(images, "PNG")
+
+        # Optionally attach a Krita canvas resize command so the client can
+        # resize the document together with applying the output.
+        if isinstance(width, int) and isinstance(height, int) and width > 0 and height > 0:
+            payload = {
+                "action": "resize_canvas",
+                "width": int(width),
+                "height": int(height),
+            }
+            resize_entry = {
+                "name": "Krita Canvas Resize",
+                "text": json.dumps(payload),
+                "content-type": "application/x-krita-command",
+            }
+
+            ui = getattr(result, "ui", {}) or {}
+            # Shallow-copy to avoid mutating any shared dicts.
+            ui = dict(ui)
+            texts = list(ui.get("text", []))
+            texts.append(resize_entry)
+            ui["text"] = texts
+            result.ui = ui
+
+        return result
 
 
 class KritaSendText(io.ComfyNode):
@@ -140,41 +169,6 @@ class KritaCanvas(io.ComfyNode):
     @classmethod
     def execute(cls):
         return io.NodeOutput(_placeholder_image(), 512, 512, 0)
-
-
-class KritaCanvasResize(io.ComfyNode):
-    @classmethod
-    def define_schema(cls):
-        return io.Schema(
-            node_id="ETN_KritaCanvasResize",
-            display_name="Krita Canvas Resize",
-            category="krita",
-            inputs=[
-                io.Int.Input("width", default=1024),
-                io.Int.Input("height", default=1024),
-            ],
-            is_output_node=True,
-        )
-
-    @classmethod
-    def execute(cls, width: int, height: int):
-        payload = {
-            "action": "resize_canvas",
-            "width": int(width),
-            "height": int(height),
-        }
-
-        return io.NodeOutput(
-            ui={
-                "text": [
-                    {
-                        "name": "Krita Canvas Resize",
-                        "text": json.dumps(payload),
-                        "content-type": "application/x-krita-command",
-                    }
-                ]
-            }
-        )
 
 
 class KritaSelection(io.ComfyNode):

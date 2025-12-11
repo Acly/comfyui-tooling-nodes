@@ -32,7 +32,6 @@ class ExternalToolingNodes(ComfyExtension):
             krita.KritaMaskLayer,
             krita.Parameter,
             krita.KritaStyle,
-            krita.KritaCanvasResize,
         ]
 
 
