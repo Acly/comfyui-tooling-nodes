@@ -1,5 +1,4 @@
 import sys
-import json
 import torch
 import numpy as np
 from pathlib import Path
@@ -83,38 +82,20 @@ class KritaOutput(io.ComfyNode):
             category="krita",
             inputs=[
                 io.Image.Input("images"),
-                io.Int.Input("width", default=0, min=0, optional=True),
-                io.Int.Input("height", default=0, min=0, optional=True),
+                io.Boolean.Input("resize_canvas", default=False),
             ],
             is_output_node=True,
         )
 
     @classmethod
-    def execute(cls, images: torch.Tensor, width: int = 0, height: int = 0):
-        # First, send images over WebSocket and get the default UI payload.
+    def execute(cls, images: torch.Tensor, resize_canvas: bool = False):
         result = SendImageWebSocket.execute(images, "PNG")
-
-        # Optionally attach a Krita canvas resize command so the client can
-        # resize the document together with applying the output.
-        if isinstance(width, int) and isinstance(height, int) and width > 0 and height > 0:
-            payload = {
-                "action": "resize_canvas",
-                "width": int(width),
-                "height": int(height),
-            }
-            resize_entry = {
-                "name": "Krita Canvas Resize",
-                "text": json.dumps(payload),
-                "content-type": "application/x-krita-command",
-            }
-
-            ui = getattr(result, "ui", {}) or {}
-            # Shallow-copy to avoid mutating any shared dicts.
-            ui = dict(ui)
-            texts = list(ui.get("text", []))
-            texts.append(resize_entry)
-            ui["text"] = texts
-            result.ui = ui
+        ui = getattr(result, "ui", {}) or {}
+        ui = dict(ui)
+        # Values in the UI dict must be lists so ComfyUI can concatenate them
+        # across batched executions. Store a single structured entry.
+        ui["resize_canvas"] = [{"enabled": bool(resize_canvas)}]
+        result.ui = ui
 
         return result
 
