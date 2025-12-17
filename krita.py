@@ -217,8 +217,8 @@ class Parameter(io.ComfyNode):
                 io.String.Input("name", default="Parameter"),
                 io.Combo.Input("type", options=_param_types, default="auto"),
                 io.String.Input("default", default=""),
-                io.Float.Input("min", default=0.0, min=-_fmax, max=_fmax, optional=True),
-                io.Float.Input("max", default=1.0, min=-_fmax, max=_fmax, optional=True),
+                io.Float.Input("min", default=-1e10, min=-_fmax, max=_fmax, optional=True),
+                io.Float.Input("max", default=1e10, min=-_fmax, max=_fmax, optional=True),
             ],
             outputs=[io.AnyType.Output(display_name="value")],
         )

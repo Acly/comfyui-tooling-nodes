@@ -96,7 +96,7 @@ function valueMatchesType(value, type, options) {
 
 function optionalWidgetValue(widgets, index, fallback) {
     const result = widgets.length > index ? widgets[index].value : null
-    return result === null || result === 0 ? fallback : result
+    return result === null || result === -1e10 || result === 1e10 ? fallback : result
 }
 
 function changeWidgets(node, type, connectedNode, connectedWidget) {
