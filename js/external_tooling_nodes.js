@@ -77,7 +77,8 @@ function defaultParameterType(widgetType, connectedNode, connectedWidget) {
     if (connectedNode.comfyClass === "CLIPTextEncode") {
         paramType = "prompt (positive)"
     }
-    if (connectedWidget.options?.round === 1) {
+    const round = connectedWidget.options?.round
+    if ((paramType == "number" && round === undefined) || round === 1) {
         paramType = "number (integer)"
     }
     return paramType
