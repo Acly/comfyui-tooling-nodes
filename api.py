@@ -154,12 +154,16 @@ def detect_svdq(cfg: dict) -> str | None:
         if comfy_config := md.get("comfy_config"):
             if isinstance(comfy_config, str):
                 comfy_config = json.loads(comfy_config)
-            return comfy_config.get("model_class")
-        model_class = md.get("model_class")
-        if model_class == "NunchakuFluxTransformer2dModel":
-            return "Flux"
-        if model_class == "NunchakuQwenImageTransformer2DModel":
-            return "QwenImage"
+            if model_class := comfy_config.get("model_class"):
+                return model_class
+
+        match md.get("model_class"):
+            case "NunchakuFluxTransformer2dModel":
+                return "Flux"
+            case "NunchakuQwenImageTransformer2DModel":
+                return "QwenImage"
+            case "NunchakuZImageTransformer2DModel":
+                return "ZImage"
     return None
 
 
