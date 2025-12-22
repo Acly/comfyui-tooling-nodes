@@ -80,13 +80,24 @@ class KritaOutput(io.ComfyNode):
             node_id="ETN_KritaOutput",
             display_name="Krita Output",
             category="krita",
-            inputs=[io.Image.Input("images")],
+            inputs=[
+                io.Image.Input("images"),
+                io.Boolean.Input("resize_canvas", default=False),
+            ],
             is_output_node=True,
         )
 
     @classmethod
-    def execute(cls, images: torch.Tensor):
-        return SendImageWebSocket.execute(images, "PNG")
+    def execute(cls, images: torch.Tensor, resize_canvas: bool = False):
+        result = SendImageWebSocket.execute(images, "PNG")
+        ui = getattr(result, "ui", {}) or {}
+        ui = dict(ui)
+        # Values in the UI dict must be lists so ComfyUI can concatenate them
+        # across batched executions. Store a single structured entry.
+        ui["resize_canvas"] = [{"enabled": bool(resize_canvas)}]
+        result.ui = ui
+
+        return result
 
 
 class KritaSendText(io.ComfyNode):
