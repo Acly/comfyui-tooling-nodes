@@ -1,6 +1,7 @@
 import sys
 import torch
 import numpy as np
+from enum import Enum
 from pathlib import Path
 from typing import Any, NamedTuple
 from PIL import Image
@@ -73,6 +74,13 @@ class _BasicTypes(str):
 BasicTypes = _BasicTypes("BASIC")
 
 
+class OutputBatchMode(Enum):
+    default = "default"
+    images = "images"
+    animation = "animation"
+    layers = "layers"
+
+
 class KritaOutput(io.ComfyNode):
     @classmethod
     def define_schema(cls):
@@ -82,22 +90,33 @@ class KritaOutput(io.ComfyNode):
             category="krita",
             inputs=[
                 io.Image.Input("images"),
-                io.Boolean.Input("resize_canvas", default=False),
+                io.String.Input("name", default=""),
+                io.Combo.Input(
+                    "batch_mode", OutputBatchMode, "batch_mode", default=OutputBatchMode.default
+                ),
+                io.Boolean.Input("resize_canvas", "resize canvas", default=False),
             ],
             is_output_node=True,
         )
 
     @classmethod
-    def execute(cls, images: torch.Tensor, resize_canvas: bool = False):
-        result = SendImageWebSocket.execute(images, "PNG")
-        ui = getattr(result, "ui", {}) or {}
-        ui = dict(ui)
-        # Values in the UI dict must be lists so ComfyUI can concatenate them
-        # across batched executions. Store a single structured entry.
-        ui["resize_canvas"] = [{"enabled": bool(resize_canvas)}]
-        result.ui = ui
-
-        return result
+    def execute(
+        cls,
+        images: torch.Tensor,
+        name="",
+        batch_mode: OutputBatchMode | str = OutputBatchMode.default,
+        resize_canvas=False,
+    ):
+        batch_mode = batch_mode.value if isinstance(batch_mode, OutputBatchMode) else batch_mode
+        info = {
+            "name": name,
+            "batch_mode": batch_mode,
+            "resize_canvas": resize_canvas,
+        }
+        output = SendImageWebSocket.execute(images, "PNG")
+        assert isinstance(output.ui, dict)
+        output.ui["info"] = [info]
+        return output
 
 
 class KritaSendText(io.ComfyNode):
