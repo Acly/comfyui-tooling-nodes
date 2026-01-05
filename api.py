@@ -145,6 +145,7 @@ def inspect_safetensors(filename: str, model_type: str, is_checkpoint: bool):
             return result
         return {"base_model": "unknown"}
     except Exception as e:
+        print("[comfyui-tooling-nodes] Error inspecting file", filename)
         traceback.print_exc()
         return {"base_model": "unknown", "error": f"Failed to detect base model: {e}"}
 
