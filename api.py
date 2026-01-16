@@ -121,6 +121,9 @@ def inspect_safetensors(filename: str, model_type: str, is_checkpoint: bool):
                     raw_name = base_model.__class__.__name__
                     if raw_name == "SDXL":
                         model_type = base_model.model_type(cfg).name.lower().replace("_", "-")
+                    if raw_name == "Flux2":
+                        hidden_size = unet_config.get("hidden_size", 0)
+                        model_type = {3072: "klein-4b", 4096: "klein-9b"}.get(hidden_size, "dev")
 
             if not raw_name:
                 return {"base_model": "unknown"}
