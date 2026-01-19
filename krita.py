@@ -328,3 +328,36 @@ class KritaStyle(io.ComfyNode):
     @classmethod
     def execute(cls, name: str, sampler_preset: str):
         raise NotImplementedError("This workflow must be started from Krita!")
+
+
+class KritaPromptStyle(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_KritaPromptStyle",
+            display_name="Krita Prompt Style",
+            category="krita",
+            inputs=[
+                io.String.Input("name", default="Style"),
+                io.Combo.Input("sampler_preset", options=["auto", "regular", "live"]),
+            ],
+            outputs=[
+                io.Model.Output(display_name="model (with loras)"),
+                io.Clip.Output(display_name="clip"),
+                io.Vae.Output(display_name="vae"),
+                io.String.Output(display_name="positive prompt (prepared)"),
+                io.String.Output(display_name="negative prompt (prepared)"),
+                io.Combo.Output(
+                    display_name="sampler name", options=comfy.samplers.KSampler.SAMPLERS
+                ),
+                io.Combo.Output(
+                    display_name="scheduler", options=comfy.samplers.KSampler.SCHEDULERS
+                ),
+                io.Int.Output(display_name="steps"),
+                io.Float.Output(display_name="guidance"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, name: str, sampler_preset: str):
+        raise NotImplementedError("This workflow must be started from Krita!")
