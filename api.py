@@ -193,7 +193,6 @@ def inspect_gguf(filename: str, model_type: str):
         else:  # stable-diffusion.cpp, requires conversion. not handled for now
             return {"base_model": "flux", "is_inpaint": False}
 
-        # Detect Chroma (modified Flux)
         if arch_str == "flux" and any(
             t.name.startswith("distilled_guidance_layer")
             for t in itertools.islice(reader.tensors, 5)
@@ -207,10 +206,27 @@ def inspect_gguf(filename: str, model_type: str):
                     arch_str = "z-image"
                     break
 
+        # Detect Flux variants
+        result_type = None
+        if arch_str == "flux":
+            for t in reader.tensors:
+                if t.name.startswith("distilled_guidance_layer"):
+                    arch_str = "chroma"
+                    break
+                elif t.name == "double_stream_modulation_img.lin.weight":
+                    arch_str = "flux2"
+                    if t.shape[0] == 3072:
+                        result_type = "klein-4b"
+                    elif t.shape[0] == 4096:
+                        result_type = "klein-9b"
+                    break
+
         result = {
             "base_model": gguf_architectures.get(arch_str, arch_str),
             "is_inpaint": False,
         }
+        if result_type is not None:
+            result["type"] = result_type
         try:
             if file_type := reader.get_field("general.file_type"):
                 result["quant"] = file_type.contents().lower()
