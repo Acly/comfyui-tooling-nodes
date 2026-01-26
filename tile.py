@@ -9,9 +9,13 @@ IntArray = npt.NDArray[np.int_]
 
 
 class TileLayout:
-    def __init__(self, image: Tensor, min_tile_size: int, padding: int, blending: int):
-        assert all([x % 8 == 0 for x in image.shape[-3:-1]]), "Image size must be divisible by 8"
-        assert min_tile_size % 8 == 0, "Tile size must be divisible by 8"
+    def __init__(
+        self, image: Tensor, min_tile_size: int, padding: int, blending: int, multiple: int
+    ):
+        assert all([x % multiple == 0 for x in image.shape[-3:-1]]), (
+            "Image size must be divisible by multiple"
+        )
+        assert min_tile_size % multiple == 0, "Tile size must be divisible by multiple"
         assert blending <= padding, "Blending must be smaller than padding"
 
         self.image_size: IntArray = np.array(image.shape[-3:-1])
@@ -21,7 +25,7 @@ class TileLayout:
 
         image_size_with_overlap = self.image_size + (self.tile_count - 1) * 2 * padding
         tile_size = np.ceil(image_size_with_overlap / self.tile_count)
-        self.tile_size: IntArray = (np.ceil(tile_size / 8) * 8).astype(int)
+        self.tile_size: IntArray = (np.ceil(tile_size / multiple) * multiple).astype(int)
 
     def size(self, coord: IntArray):
         return self.end(coord) - self.start(coord)
@@ -84,13 +88,14 @@ class CreateTileLayout(io.ComfyNode):
                 io.Int.Input("min_tile_size", default=512, min=64, max=8192, step=8),
                 io.Int.Input("padding", default=32, min=0, max=8192, step=8),
                 io.Int.Input("blending", default=8, min=0, max=256, step=8),
+                io.Int.Input("multiple", default=8, min=1, max=1024, step=1),
             ],
             outputs=[io.Custom("TileLayout").Output(display_name="layout")],
         )
 
     @classmethod
-    def execute(cls, image: Tensor, min_tile_size: int, padding: int, blending: int):
-        return io.NodeOutput(TileLayout(image, min_tile_size, padding, blending))
+    def execute(cls, image: Tensor, min_tile_size: int, padding: int, blending: int, multiple: int):
+        return io.NodeOutput(TileLayout(image, min_tile_size, padding, blending, multiple))
 
 
 class ExtractImageTile(io.ComfyNode):
