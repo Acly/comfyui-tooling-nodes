@@ -1,5 +1,4 @@
 from __future__ import annotations
-from weakref import ref as WeakRef
 from pathlib import Path
 from tqdm import tqdm
 import torch
@@ -38,6 +37,10 @@ class CLIPSafetyChecker(PreTrainedModel):
         self.special_care_embeds = nn.Parameter(torch.ones(3, projdim), requires_grad=False)
         self.concept_embeds_weights = nn.Parameter(torch.ones(17), requires_grad=False)
         self.special_care_embeds_weights = nn.Parameter(torch.ones(3), requires_grad=False)
+
+        # Model requires post_init after transformers v4.57.3
+        if hasattr(self, "post_init"):
+            self.post_init()
 
     def forward(self, clip_input, images: Tensor, sensitivity: float):
         with torch.no_grad():
