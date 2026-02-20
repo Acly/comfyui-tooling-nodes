@@ -169,12 +169,13 @@ class KritaCanvas(io.ComfyNode):
                 io.Int.Output(display_name="width"),
                 io.Int.Output(display_name="height"),
                 io.Int.Output(display_name="seed"),
+                io.Mask.Output(display_name="mask"),
             ],
         )
 
     @classmethod
-    def execute(cls):
-        return io.NodeOutput(_placeholder_image(), 512, 512, 0)
+    def execute(cls, **kwargs):
+        return io.NodeOutput(_placeholder_image(), 512, 512, 0, torch.ones(1, 512, 512))
 
 
 class SelectionContext(Enum):
