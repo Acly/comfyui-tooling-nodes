@@ -17,6 +17,59 @@ from comfy.sd import StyleModel
 from comfy_api.latest import io
 
 
+class ListEmpty(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_ListEmpty",
+            display_name="Creates an empty list",
+            category="external_tooling",
+            inputs=[],
+            outputs=[io.AnyType.Output()],
+        )
+
+    @classmethod
+    def execute(cls):
+        return io.NodeOutput([])
+
+
+class ListAppend(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_ListAppend",
+            display_name="Appends an item to a list",
+            category="external_tooling",
+            inputs=[
+                io.AnyType.Input("list"),
+                io.AnyType.Input("item"),
+            ],
+            outputs=[io.AnyType.Output()],
+        )
+
+    @classmethod
+    def execute(cls, list: list[Any], item: Any):
+        list = list.copy()
+        list.append(item)
+        return io.NodeOutput(list)
+
+
+class DataList(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="ETN_DataList",
+            display_name="Converts a list into a data list",
+            category="external_tooling",
+            inputs=[io.AnyType.Input("list")],
+            outputs=[io.AnyType.Output(is_output_list=True)],
+        )
+
+    @classmethod
+    def execute(cls, list: list[Any]):
+        return io.NodeOutput(list)
+
+
 class LoadImageBase64(io.ComfyNode):
     @classmethod
     def define_schema(cls):

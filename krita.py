@@ -222,6 +222,17 @@ class KritaSelection(io.ComfyNode):
         return io.NodeOutput(torch.ones(1, 512, 512), False, 0, 0)
 
 
+class GroupMode(Enum):
+    flatten = "flatten"
+    all_children = "all children"
+
+
+_group_mode_help = """
+Determines the behavior when a group layer is selected:
+- flatten: the group is flattened into a single image
+- all children: all child layers in the group (recursively) are returned as separate images"""
+
+
 class KritaImageLayer(io.ComfyNode):
     @classmethod
     def define_schema(cls):
@@ -229,16 +240,25 @@ class KritaImageLayer(io.ComfyNode):
             node_id="ETN_KritaImageLayer",
             display_name="Krita Image Layer",
             category="krita",
-            inputs=[io.String.Input("name", default="Image")],
+            inputs=[
+                io.String.Input("name", default="Image"),
+                io.Combo.Input(
+                    "group_mode",
+                    options=GroupMode,
+                    default=GroupMode.flatten,
+                    tooltip=_group_mode_help,
+                ),
+            ],
             outputs=[
-                io.Image.Output(display_name="image"),
-                io.Mask.Output(display_name="mask"),
+                io.Image.Output(display_name="images", is_output_list=True),
+                io.Mask.Output(display_name="masks", is_output_list=True),
+                io.String.Output(display_name="names", is_output_list=True),
             ],
         )
 
     @classmethod
-    def execute(cls, name: str):
-        return io.NodeOutput(_placeholder_image(), torch.ones(1, 512, 512))
+    def execute(cls, name: str, group_mode: GroupMode):
+        return io.NodeOutput([_placeholder_image()], [torch.ones(1, 512, 512)], [""])
 
 
 class KritaMaskLayer(io.ComfyNode):
