@@ -58,6 +58,7 @@ model_names = {
     "QwenImage": "qwen-image",
     "ErnieImage": "ernie-image",
     "Flux2": "flux2",
+    "Anima": "anima",
 }
 
 gguf_architectures = {
