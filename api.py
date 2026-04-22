@@ -57,6 +57,7 @@ model_names = {
     "Omnigen2": "omnigen2",
     "QwenImage": "qwen-image",
     "Flux2": "flux2",
+    "Anima": "anima",
 }
 
 gguf_architectures = {
