@@ -1,15 +1,16 @@
 import sys
-import torch
-import numpy as np
 from enum import Enum
 from pathlib import Path
 from typing import Any, NamedTuple
-from PIL import Image
 
-import server
 import comfy.samplers
+import numpy as np
+import server
+import torch
 from comfy.comfy_types.node_typing import IO
 from comfy_api.latest import io
+from PIL import Image
+
 from .nodes import SendImageWebSocket
 
 
@@ -102,7 +103,7 @@ class KritaOutput(io.ComfyNode):
         )
 
     @classmethod
-    def execute(
+    def execute(  # type: ignore
         cls,
         images: torch.Tensor,
         x: int = 0,
@@ -141,7 +142,7 @@ class KritaSendText(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, value: Any, name: str, type: str):
+    def execute(cls, value: Any, name: str, type: str):  # type: ignore
         mime = {
             "text": "text/plain",
             "markdown": "text/markdown",
@@ -237,7 +238,7 @@ class KritaImageLayer(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, name: str):
+    def execute(cls, name: str):  # type: ignore
         return io.NodeOutput(_placeholder_image(), torch.ones(1, 512, 512))
 
 
@@ -255,7 +256,7 @@ class KritaMaskLayer(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, name: str):
+    def execute(cls, name: str):  # type: ignore
         return io.NodeOutput(torch.ones(1, 512, 512))
 
 
@@ -290,7 +291,7 @@ class Parameter(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, name: str, type: str, default, min=0.0, max=1.0):
+    def execute(cls, name: str, type: str, default, min=0.0, max=1.0):  # type: ignore
         if type == "number":
             return io.NodeOutput(float(default))
         elif type == "number (integer)":
@@ -327,7 +328,7 @@ class KritaStyle(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, name: str, sampler_preset: str):
+    def execute(cls, name: str, sampler_preset: str):  # type: ignore
         raise NotImplementedError("This workflow must be started from Krita!")
 
 
@@ -359,5 +360,5 @@ class KritaStyleAndPrompt(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, name: str, sampler_preset: str):
+    def execute(cls, name: str, sampler_preset: str):  # type: ignore
         raise NotImplementedError("This workflow must be started from Krita!")
