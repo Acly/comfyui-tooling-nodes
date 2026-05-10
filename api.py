@@ -348,7 +348,6 @@ if _server is not None:
         except Exception as e:
             return web.json_response(dict(error=str(e)), status=500)
 
-    @_server.routes.put("/api/etn/image/{id}")
     async def put_image(request: web.Request):
         try:
             id = request.match_info.get("id", "")
@@ -364,6 +363,20 @@ if _server is not None:
             return web.json_response(dict(status="success"), status=201)
         except Exception as e:
             return web.json_response(dict(error=str(e)), status=500)
+
+    async def _put_image_expect_handler(request: web.Request) -> None:
+        # Only send "100 Continue" if the image isn't already cached.
+        # This allows clients to avoid sending the image data.
+        expect = request.headers.get("Expect", "")
+        if expect.lower() == "100-continue":
+            id = request.match_info.get("id", "")
+            if id not in image_cache:
+                await request.writer.write(b"HTTP/1.1 100 Continue\r\n\r\n")
+                request.writer.output_size = 0
+
+    _server.app.router.add_route(
+        "PUT", "/api/etn/image/{id}", put_image, expect_handler=_put_image_expect_handler
+    )
 
     @_server.routes.put("/api/etn/upload/{folder_name}/{filename}")
     async def upload(request: web.Request):
