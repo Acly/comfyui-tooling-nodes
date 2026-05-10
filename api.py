@@ -352,6 +352,7 @@ if _server is not None:
         try:
             id = request.match_info.get("id", "")
             if id in image_cache:
+                await request.release()  # Consume and discard the data to avoid connection abort
                 return web.json_response(dict(status="cached"), status=200)
 
             content_type = request.headers.get("Content-Type", "application/octet-stream")
@@ -364,15 +365,12 @@ if _server is not None:
         except Exception as e:
             return web.json_response(dict(error=str(e)), status=500)
 
-    async def _put_image_expect_handler(request: web.Request) -> None:
-        # Only send "100 Continue" if the image isn't already cached.
-        # This allows clients to avoid sending the image data.
-        expect = request.headers.get("Expect", "")
-        if expect.lower() == "100-continue":
-            id = request.match_info.get("id", "")
-            if id not in image_cache:
-                await request.writer.write(b"HTTP/1.1 100 Continue\r\n\r\n")
-                request.writer.output_size = 0
+    async def _put_image_expect_handler(request: web.Request):
+        if request.match_info.get("id", "") in image_cache:
+            # Skip "100 Continue" since we don't need the data, return 200 immediately.
+            return web.json_response(dict(status="cached"), status=200)
+        # otherwise run default aiohttp handler
+        return None
 
     _server.app.router.add_route(
         "PUT", "/api/etn/image/{id}", put_image, expect_handler=_put_image_expect_handler
