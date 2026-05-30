@@ -293,3 +293,9 @@ git clone https://github.com/Acly/comfyui-tooling-nodes.git
 ```
 
 Restart ComfyUI and the nodes are functional.
+
+
+## Acknowledgements
+
+* Region nodes adapted from [laksjdjf/cgem156-ComfyUI](https://github.com/laksjdjf/cgem156-ComfyUI/blob/main/scripts/attention_couple/node.py)
+* Control nodes adapted from [kohya-ss/ComfyUI-Anima-LLLite](https://github.com/kohya-ss/ComfyUI-Anima-LLLite)

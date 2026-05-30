@@ -1,5 +1,7 @@
 from comfy_api.latest import ComfyExtension, io
-from . import api as api, nodes, tile, region, nsfw, translation, krita
+
+from . import api as api
+from . import control, krita, nodes, region, tile, translation
 
 
 class ExternalToolingNodes(ComfyExtension):
@@ -32,9 +34,11 @@ class ExternalToolingNodes(ComfyExtension):
             krita.Parameter,
             krita.KritaStyle,
             krita.KritaStyleAndPrompt,
+            control.ControlApply,
+            control.ControlLoad,
         ]
         try:  # see #66
-            import nsfw
+            from . import nsfw
 
             node_list.append(nsfw.NSFWFilter)
         except (ImportError, ModuleNotFoundError):
