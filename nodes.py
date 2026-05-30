@@ -1,20 +1,21 @@
 from __future__ import annotations
+
+import base64
+import time
 from copy import copy
 from dataclasses import dataclass
-import time
+from io import BytesIO
 from typing import NamedTuple
 from uuid import uuid4
-from PIL import Image
+
 import numpy as np
-import base64
 import torch
 import torch.nn.functional as F
-from io import BytesIO
-from server import PromptServer, BinaryEventTypes
-
 from comfy.clip_vision import ClipVisionModel
 from comfy.sd import StyleModel
 from comfy_api.latest import io
+from PIL import Image
+from server import BinaryEventTypes, PromptServer
 
 
 class LoadImageBase64(io.ComfyNode):
@@ -29,7 +30,7 @@ class LoadImageBase64(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, image: str):
+    def execute(cls, image: str):  # type: ignore
         _strip_prefix(image, "data:image/png;base64,")
         imgdata = base64.b64decode(image)
         img = Image.open(BytesIO(imgdata))
@@ -59,7 +60,7 @@ class LoadMaskBase64(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, mask: str):
+    def execute(cls, mask: str):  # type: ignore
         _strip_prefix(mask, "data:image/png;base64,")
         imgdata = base64.b64decode(mask)
         img = Image.open(BytesIO(imgdata))
@@ -85,7 +86,7 @@ class SendImageWebSocket(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, images: torch.Tensor, format: str):
+    def execute(cls, images: torch.Tensor, format: str):  # type: ignore
         results = []
         for tensor in images:
             array = 255.0 * tensor.cpu().numpy()
@@ -198,7 +199,7 @@ class LoadImageCache(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, id: str):
+    def execute(cls, id: str):  # type: ignore
         image_data, content_type = image_cache.get(id, extend=True)
         if image_data is None:
             raise ValueError(f"Image with ID {id} not found in cache.")
@@ -237,7 +238,7 @@ class SaveImageCache(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, images: torch.Tensor, format: str):
+    def execute(cls, images: torch.Tensor, format: str):  # type: ignore
         results = []
         for tensor in images:
             array = 255.0 * tensor.cpu().numpy()
@@ -284,7 +285,7 @@ class ApplyMaskToImage(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, image: torch.Tensor, mask: torch.Tensor):
+    def execute(cls, image: torch.Tensor, mask: torch.Tensor):  # type: ignore
         out = to_bchw(image)
         if out.shape[1] == 3:  # Assuming RGB images
             out = torch.cat([out, torch.ones_like(out[:, :1, :, :])], dim=1)
@@ -329,7 +330,7 @@ class ReferenceImage(io.ComfyNode):
         )
 
     @classmethod
-    def execute(
+    def execute(  # type: ignore
         cls,
         image: torch.Tensor,
         weight: float,
@@ -359,7 +360,7 @@ class ApplyReferenceImages(io.ComfyNode):
         )
 
     @classmethod
-    def execute(
+    def execute(  # type: ignore
         cls,
         conditioning: list[list],
         clip_vision: ClipVisionModel,
