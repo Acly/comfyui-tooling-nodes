@@ -1,3 +1,4 @@
+# Adapted from https://github.com/pamparamm/ComfyUI-ppm
 # Adapted from https://github.com/laksjdjf/cgem156-ComfyUI/blob/main/scripts/attention_couple/node.py
 # by @laksjdjf
 
