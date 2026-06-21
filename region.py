@@ -4,59 +4,29 @@
 
 from __future__ import annotations
 from functools import partial
-from typing import Any, Callable, NamedTuple
+from typing import Any, NamedTuple
 import torch
 import torch.nn.functional as F
 import math
 from torch import Tensor, Size
+import comfy.model_management
+import comfy.patcher_extension
 from comfy.model_patcher import ModelPatcher
+from comfy.model_base import Anima, CosmosPredict2
+from comfy.ldm.cosmos.predict2 import Attention as CosmosAttention
+from comfy.sampler_helpers import convert_cond
+from comfy.samplers import process_conds
 from comfy_api.latest import io
-
-try:
-    from comfy.model_base import Anima
-except (ImportError, AttributeError):
-    Anima = None
-
-try:
-    from comfy.model_base import CosmosPredict2
-except (ImportError, AttributeError):
-    CosmosPredict2 = None
-
-try:
-    from comfy.ldm.cosmos.predict2 import Attention as CosmosAttention
-except (ImportError, AttributeError):
-    CosmosAttention = None
 
 
 COND = 0
 UNCOND = 1
 ANIMA_COUPLE_WRAPPER_KEY = "etn_attention_mask_anima"
+ANIMA_COUPLE_PATCH_KEY = "etn_attention_mask_patch"
 CONDS_COUPLE_KEY = "etn_couple_conds"
 COND_UNCOND_COUPLE_KEY = "etn_couple_cond_or_uncond"
-NEGPIP_MASKS_COUPLE_KEY = "etn_couple_negpip_masks"
+COUPLE_ACTIVE_KEY = "etn_couple_active"
 NUM_TOKENS_COUPLE_KEY = "etn_couple_num_tokens"
-COND_NEGPIP_MASK_KEY = "c_ppm_negpip_mask"
-NEGPIP_MASK_KEY = "ppm_negpip_mask"
-
-apply_rope_split_half: Callable[[Tensor, Tensor, Tensor], tuple[Tensor, Tensor]]
-try:
-    import comfy.quant_ops
-
-    apply_rope_split_half = comfy.quant_ops.ck.apply_rope_split_half
-except (ImportError, AttributeError):
-
-    def _apply_rope_split_half(q: Tensor, k: Tensor, rope_emb: Tensor) -> tuple[Tensor, Tensor]:
-        q = _apply_rotary_pos_emb(q, rope_emb)
-        k = _apply_rotary_pos_emb(k, rope_emb)
-        return q, k
-
-    def _apply_rotary_pos_emb(t: Tensor, freqs: Tensor) -> Tensor:
-        t_ = t.reshape(*t.shape[:-1], 2, -1).movedim(-2, -1).unsqueeze(-2).float()
-        t_out = freqs[..., 0] * t_[..., 0] + freqs[..., 1] * t_[..., 1]
-        t_out = t_out.movedim(-1, -2).reshape(*t.shape).type_as(t)
-        return t_out
-
-    apply_rope_split_half = _apply_rope_split_half
 
 
 def downsample_mask(mask: Tensor, batch: int, target_size: int, original_shape: Size) -> Tensor:
@@ -280,13 +250,6 @@ class AttentionMaskPatch:
         return new_model
 
     def apply_anima(self, model: ModelPatcher):
-        if CosmosAttention is None:
-            raise RuntimeError("Anima region attention requires comfy.ldm.cosmos.predict2.Attention.")
-
-        import comfy.model_management
-        import comfy.patcher_extension
-        from comfy.sampler_helpers import convert_cond
-
         new_model = model.clone()
         _patch_cosmos_attention(new_model)
 
@@ -308,14 +271,12 @@ class AttentionMaskPatch:
 
 def _is_anima_couple_model(model: ModelPatcher) -> bool:
     model_type = type(model.model)
-    return any(cls is not None and issubclass(model_type, cls) for cls in (Anima, CosmosPredict2))
+    return issubclass(model_type, (Anima, CosmosPredict2))
 
 
 def _anima_couple_sample_wrapper(conds_converted: list, device):
     def sample_wrapper(executor, *args, **kwargs):
         if len(conds_converted) > 0:
-            from comfy.samplers import process_conds
-
             guider = args[0]
             extra_options: dict[str, Any] = args[2]
             seed: int = extra_options["seed"]
@@ -335,18 +296,11 @@ def _anima_couple_sample_wrapper(conds_converted: list, device):
             )["positive"]
 
             conds_couple = [cond["model_conds"]["c_crossattn"].cond for cond in conds_processed]
-            negpip_masks_couple = [
-                cond["model_conds"][COND_NEGPIP_MASK_KEY].cond.to(device)
-                for cond in conds_processed
-                if COND_NEGPIP_MASK_KEY in cond["model_conds"]
-            ]
 
             model_options: dict[str, Any] = extra_options["model_options"]
             transformer_options: dict[str, Any] = model_options.get("transformer_options", {}).copy()
             transformer_options[CONDS_COUPLE_KEY] = conds_couple
             transformer_options[NUM_TOKENS_COUPLE_KEY] = [cond.shape[1] for cond in conds_couple]
-            if len(negpip_masks_couple) == len(conds_processed):
-                transformer_options[NEGPIP_MASKS_COUPLE_KEY] = negpip_masks_couple
             model_options["transformer_options"] = transformer_options
 
         return executor(*args, **kwargs)
@@ -366,99 +320,84 @@ def _anima_couple_diffusion_wrapper(patch: AttentionMaskPatch):
         activations_shape[-1] = activations_shape[-1] // patch_spatial
 
         transformer_options["activations_shape"] = activations_shape
-        transformer_options["etn_attn_pre_ca"] = pre_cross_attention
-        transformer_options["etn_attn_output_ca"] = cross_attention_output
+        transformer_options[ANIMA_COUPLE_PATCH_KEY] = patch
         kwargs["transformer_options"] = transformer_options
 
         return executor(*args, **kwargs)
 
-    def pre_cross_attention(
-        transformer_options: dict,
-        x: Tensor,
-        context: Tensor | None,
-        rope_emb: Tensor | None,
-        _transformer_options,
-    ):
-        transformer_options = transformer_options.copy()
-        if context is None or CONDS_COUPLE_KEY not in transformer_options:
-            transformer_options[COND_UNCOND_COUPLE_KEY] = list(transformer_options["cond_or_uncond"])
-            return x, context, rope_emb, transformer_options
-
-        conds: list[Tensor] = transformer_options[CONDS_COUPLE_KEY]
-        num_tokens_c: list[int] = transformer_options[NUM_TOKENS_COUPLE_KEY]
-        cond_or_uncond = transformer_options["cond_or_uncond"]
-
-        num_chunks = len(cond_or_uncond)
-        batch = x.shape[0] // num_chunks
-        x_chunks = x.chunk(num_chunks, dim=0)
-        c_chunks = context.chunk(num_chunks, dim=0)
-        lcm_tokens_c = lcm_for_list(num_tokens_c + [context.shape[1]])
-        conds_c_tensor = torch.cat(
-            [cond.repeat(batch, lcm_tokens_c // num_tokens_c[i], 1) for i, cond in enumerate(conds)],
-            dim=0,
-        )
-
-        n: Tensor | None = transformer_options.get(NEGPIP_MASK_KEY)
-        negpip_masks: list[Tensor] | None = transformer_options.get(NEGPIP_MASKS_COUPLE_KEY)
-        has_negpip = n is not None and negpip_masks is not None
-        if has_negpip:
-            n_chunks = n.chunk(num_chunks, dim=0)
-            num_tokens_n: list[int] = [mask.shape[1] for mask in negpip_masks]
-            lcm_tokens_n = lcm_for_list(num_tokens_n + [n.shape[1]])
-            conds_n_tensor = torch.cat(
-                [mask.repeat(batch, lcm_tokens_n // num_tokens_n[i], 1) for i, mask in enumerate(negpip_masks)],
-                dim=0,
-            )
-
-        xs, cs, ns = [], [], []
-        cond_or_uncond_couple = []
-        for i, cond_type in enumerate(cond_or_uncond):
-            x_target = x_chunks[i]
-            c_target = c_chunks[i].repeat(1, lcm_tokens_c // context.shape[1], 1)
-            if cond_type == UNCOND:
-                xs.append(x_target)
-                cs.append(c_target)
-                cond_or_uncond_couple.append(UNCOND)
-            else:
-                xs.append(x_target.repeat(patch.num_conds, 1, 1))
-                cs.append(conds_c_tensor)
-                cond_or_uncond_couple.extend([COND] * patch.num_conds)
-
-            if has_negpip:
-                n_target = n_chunks[i].repeat(1, lcm_tokens_n // n.shape[1], 1)
-                ns.append(n_target if cond_type == UNCOND else conds_n_tensor)
-
-        transformer_options[COND_UNCOND_COUPLE_KEY] = cond_or_uncond_couple
-        if has_negpip:
-            transformer_options[NEGPIP_MASK_KEY] = torch.cat(ns, dim=0)
-
-        return torch.cat(xs, dim=0), torch.cat(cs, dim=0), rope_emb, transformer_options
-
-    def cross_attention_output(transformer_options: dict, out: Tensor):
-        cond_or_uncond = transformer_options[COND_UNCOND_COUPLE_KEY]
-        size = tuple(transformer_options["activations_shape"][-2:])
-        batch = out.shape[0] // len(cond_or_uncond)
-        mask = patch.mask.to(out.device, dtype=out.dtype)
-        mask_downsample = reshape_mask(mask, size, batch, out.shape[1])
-
-        outputs = []
-        cond_outputs = []
-        i_cond = 0
-        for i, cond_type in enumerate(cond_or_uncond):
-            pos, next_pos = i * batch, (i + 1) * batch
-            if cond_type == UNCOND:
-                outputs.append(out[pos:next_pos])
-            else:
-                pos_cond, next_pos_cond = i_cond * batch, (i_cond + 1) * batch
-                cond_outputs.append(out[pos:next_pos] * mask_downsample[pos_cond:next_pos_cond])
-                i_cond += 1
-
-        if len(cond_outputs) > 0:
-            outputs.append(torch.stack(cond_outputs).sum(0))
-
-        return torch.cat(outputs, dim=0)
-
     return diffusion_wrapper
+
+
+def pre_cross_attention(
+    patch: AttentionMaskPatch,
+    transformer_options: dict,
+    x: Tensor,
+    context: Tensor,
+    rope_emb: Tensor | None,
+) -> tuple[Tensor, Tensor, Tensor | None, dict]:
+    transformer_options = transformer_options.copy()
+    if CONDS_COUPLE_KEY not in transformer_options:
+        transformer_options[COND_UNCOND_COUPLE_KEY] = list(transformer_options["cond_or_uncond"])
+        transformer_options[COUPLE_ACTIVE_KEY] = False
+        return x, context, rope_emb, transformer_options
+
+    conds: list[Tensor] = transformer_options[CONDS_COUPLE_KEY]
+    num_tokens_c: list[int] = transformer_options[NUM_TOKENS_COUPLE_KEY]
+    cond_or_uncond = transformer_options["cond_or_uncond"]
+
+    num_chunks = len(cond_or_uncond)
+    batch = x.shape[0] // num_chunks
+    x_chunks = x.chunk(num_chunks, dim=0)
+    c_chunks = context.chunk(num_chunks, dim=0)
+    lcm_tokens_c = lcm_for_list(num_tokens_c + [context.shape[1]])
+    conds_c_tensor = torch.cat(
+        [cond.repeat(batch, lcm_tokens_c // num_tokens_c[i], 1) for i, cond in enumerate(conds)],
+        dim=0,
+    )
+
+    xs, cs = [], []
+    cond_or_uncond_couple = []
+    for i, cond_type in enumerate(cond_or_uncond):
+        x_target = x_chunks[i]
+        c_target = c_chunks[i].repeat(1, lcm_tokens_c // context.shape[1], 1)
+        if cond_type == UNCOND:
+            xs.append(x_target)
+            cs.append(c_target)
+            cond_or_uncond_couple.append(UNCOND)
+        else:
+            xs.append(x_target.repeat(patch.num_conds, 1, 1))
+            cs.append(conds_c_tensor)
+            cond_or_uncond_couple.extend([COND] * patch.num_conds)
+
+    transformer_options[COND_UNCOND_COUPLE_KEY] = cond_or_uncond_couple
+    transformer_options[COUPLE_ACTIVE_KEY] = True
+
+    return torch.cat(xs, dim=0), torch.cat(cs, dim=0), rope_emb, transformer_options
+
+
+def cross_attention_output(patch: AttentionMaskPatch, transformer_options: dict, out: Tensor):
+    cond_or_uncond = transformer_options[COND_UNCOND_COUPLE_KEY]
+    size = tuple(transformer_options["activations_shape"][-2:])
+    batch = out.shape[0] // len(cond_or_uncond)
+    mask = patch.mask.to(out.device, dtype=out.dtype)
+    mask_downsample = reshape_mask(mask, size, batch, out.shape[1])
+
+    outputs = []
+    cond_outputs = []
+    i_cond = 0
+    for i, cond_type in enumerate(cond_or_uncond):
+        pos, next_pos = i * batch, (i + 1) * batch
+        if cond_type == UNCOND:
+            outputs.append(out[pos:next_pos])
+        else:
+            pos_cond, next_pos_cond = i_cond * batch, (i_cond + 1) * batch
+            cond_outputs.append(out[pos:next_pos] * mask_downsample[pos_cond:next_pos_cond])
+            i_cond += 1
+
+    if len(cond_outputs) > 0:
+        outputs.append(torch.stack(cond_outputs).sum(0))
+
+    return torch.cat(outputs, dim=0)
 
 
 def _patch_cosmos_attention(model_patcher: ModelPatcher):
@@ -478,70 +417,20 @@ def _cosmos_attention_forward_patched(
     x: Tensor,
     context: Tensor | None = None,
     rope_emb: Tensor | None = None,
-    transformer_options: dict | None = {},
+    transformer_options: dict | None = None,
 ) -> Tensor:
     transformer_options = transformer_options if transformer_options is not None else {}
+    patch: AttentionMaskPatch | None = transformer_options.get(ANIMA_COUPLE_PATCH_KEY)
 
-    x, context, rope_emb, transformer_options = _calc_patched(
-        "etn_attn_pre_sa" if context is None else "etn_attn_pre_ca",
-        transformer_options,
-        None,
-        x,
-        context,
-        rope_emb,
-        transformer_options,
-    )
+    if context is not None and patch is not None:
+        x, context, rope_emb, transformer_options = pre_cross_attention(
+            patch, transformer_options, x, context, rope_emb
+        )
 
-    q, k, v = _compute_cosmos_qkv_patched(self, x, context, rope_emb=rope_emb, transformer_options=transformer_options)
+    q, k, v = self.compute_qkv(x, context, rope_emb=rope_emb)
     output = self.compute_attention(q, k, v, transformer_options=transformer_options)
 
-    return _calc_patched(
-        "etn_attn_output_sa" if context is None else "etn_attn_output_ca",
-        transformer_options,
-        None,
-        output,
-    )
+    if context is not None and patch is not None and transformer_options.get(COUPLE_ACTIVE_KEY, False):
+        output = cross_attention_output(patch, transformer_options, output)
 
-
-def _compute_cosmos_qkv_patched(
-    self,
-    x: Tensor,
-    context: Tensor | None = None,
-    rope_emb: Tensor | None = None,
-    transformer_options: dict[str, Any] = {},
-) -> tuple[Tensor, Tensor, Tensor]:
-    if context is not None:
-        q = _calc_patched("etn_attn_q_proj_ca", transformer_options, self.q_proj, x)
-        k = _calc_patched("etn_attn_k_proj_ca", transformer_options, self.k_proj, context)
-        v = _calc_patched("etn_attn_v_proj_ca", transformer_options, self.v_proj, context)
-    else:
-        q = _calc_patched("etn_attn_q_proj_sa", transformer_options, self.q_proj, x)
-        k = _calc_patched("etn_attn_k_proj_sa", transformer_options, self.k_proj, x)
-        v = _calc_patched("etn_attn_v_proj_sa", transformer_options, self.v_proj, x)
-
-    q = q.reshape(*q.shape[:-1], self.n_heads, self.head_dim)
-    k = k.reshape(*k.shape[:-1], self.n_heads, self.head_dim)
-    v = v.reshape(*v.shape[:-1], self.n_heads, self.head_dim)
-
-    q = _calc_patched("etn_attn_q_norm", transformer_options, self.q_norm, q)
-    k = _calc_patched("etn_attn_k_norm", transformer_options, self.k_norm, k)
-    v = _calc_patched("etn_attn_v_norm", transformer_options, self.v_norm, v)
-    if self.is_selfattn and rope_emb is not None:
-        q, k = _calc_patched("etn_attn_rope", transformer_options, apply_rope_split_half, q, k, rope_emb)
-
-    return q, k, v
-
-
-def _calc_patched(patch_key: str, transformer_options: dict[str, Any], func: Callable | None, *args, **kwargs):
-    patch_func: Callable | None = transformer_options.get(patch_key)
-    if patch_func is not None:
-        if func is not None:
-            return patch_func(func, transformer_options, *args, **kwargs)
-        return patch_func(transformer_options, *args, **kwargs)
-    if func is not None:
-        return func(*args, **kwargs)
-    if len(args) == 0:
-        return None
-    if len(args) == 1:
-        return args[0]
-    return args
+    return output
