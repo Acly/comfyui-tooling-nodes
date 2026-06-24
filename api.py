@@ -59,6 +59,7 @@ model_names = {
     "ErnieImage": "ernie-image",
     "Flux2": "flux2",
     "Anima": "anima",
+    "Krea2": "krea2",
 }
 
 gguf_architectures = {
