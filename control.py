@@ -439,6 +439,13 @@ class ControlNetLLLiteDiT(nn.Module):
                 continue
             cls = module.__class__.__name__
 
+            def _is_linear_like(module):
+                return (
+                hasattr(module, "in_features")
+                and hasattr(module, "out_features")
+                and callable(getattr(module, "forward", None))
+            )
+
             if any_attn and cls == TARGET_ATTENTION_CLASS:
                 # The Anima-block Attention exposes is_selfattn; the LLM-Adapter
                 # Attention does not — skip the latter even if path filter misses.
@@ -446,7 +453,7 @@ class ControlNetLLLiteDiT(nn.Module):
                     continue
                 is_self_attn = bool(module.is_selfattn)
                 for child_name, child in module.named_children():
-                    if not isinstance(child, nn.Linear):
+                    if not _is_linear_like(child):
                         continue
                     if not self._attn_atomic_match(is_self_attn, child_name, atomics):
                         continue
@@ -459,7 +466,7 @@ class ControlNetLLLiteDiT(nn.Module):
 
             elif want_mlp_fc1 and cls == TARGET_MLP_CLASS:
                 child = getattr(module, "layer1", None)
-                if not isinstance(child, nn.Linear):
+                if not _is_linear_like(child):
                     continue
                 full_name = f"lllite_dit.{name}.layer1".replace(".", "_")
                 modules.append(
