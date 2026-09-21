@@ -56,6 +56,7 @@ model_names = {
     "ACEStep": "ace-step",
     "Omnigen2": "omnigen2",
     "QwenImage": "qwen-image",
+    "QwenImage21": "qwen-image21",
     "ErnieImage": "ernie-image",
     "Flux2": "flux2",
     "Anima": "anima",
